@@ -25,6 +25,9 @@ import { AccessPage } from "./Access";
 import { PlatformApp } from "./Platform";
 import { MasterPage } from "./Master";
 import { Dashboard, SupplierHome } from "./Overview";
+import { LocationsPage } from "./Locations";
+import { IntegrationPage } from "./Integration";
+import { SupplierAccountsPage } from "./SupplierAccounts";
 const SessionContext = createContext<Session | null>(null);
 export function useSession() {
   const s = useContext(SessionContext);
@@ -90,8 +93,8 @@ function Login({ onLogin }: { onLogin: () => void }) {
           Setiap stok terkendali.
         </h1>
         <p>
-          Kelola penerimaan, penyimpanan, persediaan, dan pengeluaran barang dengan
-          kontrol mutu yang jelas.
+          Kelola penerimaan, penyimpanan, persediaan, dan pengeluaran barang
+          dengan kontrol mutu yang jelas.
         </p>
         <div className="stages">
           <span>Inbound</span>
@@ -161,8 +164,8 @@ function Login({ onLogin }: { onLogin: () => void }) {
           <details className="external-login">
             <summary>Masuk sebagai pemasok</summary>
             <p className="muted">
-              Akun pemasok dibuat oleh tenant dan masuk dengan kata
-              sandinya sendiri.
+              Akun pemasok dibuat oleh tenant dan masuk dengan kata sandinya
+              sendiri.
             </p>
             <Form
               label="Masuk"
@@ -226,11 +229,36 @@ const navigation: {
 }[] = [
   {
     group: "GUDANG",
-    items: [{ to: "/", label: "Ringkasan", icon: "home" }],
+    items: [
+      { to: "/", label: "Ringkasan", icon: "home" },
+      {
+        to: "/locations",
+        label: "Struktur gudang",
+        icon: "master",
+        permission: "master.view",
+      },
+      {
+        to: "/supplier-accounts",
+        label: "Akun pemasok",
+        icon: "fleet",
+        permission: "partner.provision",
+      },
+    ],
   },
   {
     group: "MASTER DATA",
     items: [{ to: "/master", label: "Master data", icon: "master" }],
+  },
+  {
+    group: "INTEGRASI",
+    items: [
+      {
+        to: "/integration",
+        label: "Transportasi",
+        icon: "roadmap",
+        permission: "integration.view",
+      },
+    ],
   },
   {
     group: "GOVERNANCE",
@@ -553,6 +581,9 @@ function TenantApp() {
           <Route index element={<Dashboard />} />
           <Route path="master" element={<MasterPage />} />
           <Route path="master/:resource" element={<MasterPage />} />
+          <Route path="locations" element={<LocationsPage />} />
+          <Route path="supplier-accounts" element={<SupplierAccountsPage />} />
+          <Route path="integration" element={<IntegrationPage />} />
           <Route path="access" element={<AccessPage />} />
           <Route path="*" element={<NotFound />} />
         </Route>

@@ -10,7 +10,7 @@ Order (follows the product document): foundation -> 1 Governance & Master Data -
 |---|---|---|
 | CP0 | Foundation cloned from OptiDeli layers: tenancy, session auth, OptiNexus OIDC + permission pull, platform admin, generic master engine, access control with WMS permission catalog and role matrix. 26 backend tests. | done (backend); frontend adaptation next |
 | CP0b | Frontend shell (login, navigation, access, master screens, supplier home) with OptiStash branding; Deli screens removed; build + vitest green | done |
-| CP1 | Module 1: warehouses, storage hierarchy (Zone/Aisle/Rack/Shelf/Bin, per-warehouse granularity), categories, UoM, SKU + packaging, partners, supplier provisioning, transport integration mode | planned |
+| CP1 | Module 1: warehouses with granularity limit, storage hierarchy (create, bulk generate, block/unblock with reason, deactivate), UoM, categories, SKU with FEFO/FIFO/LIFO and shelf-life rules, packaging, partners, supplier portal accounts (never reach internal screens), transport integration mode (OptiDeli / third-party API / manual). 33 backend tests, frontend build green. Known gap: supplier account picker lists the first 50 suppliers. | done |
 | CP2 | Module 2: ASN, dock booking/gate-in, receiving, ISO 8.7 quarantine, LPN labels, putaway | planned |
 | CP3 | Module 3: stock ledger, stock map, lock/unlock, analysis (FSN/ABC/VED/HML/SDE/XYZ/EOQ), cycle count | planned |
 | CP4 | Module 4: allocation FEFO/FIFO/LIFO, wave/batch/cluster picking, pack verification, dispatch, manifest | planned |

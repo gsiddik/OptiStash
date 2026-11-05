@@ -3,7 +3,7 @@
 namespace App\Domain\Master;
 
 use App\Domain\Shared\TenantStore;
-use App\Domain\Spm\DocumentNumbers;
+use App\Domain\Shared\DocumentNumbers;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -112,6 +112,10 @@ final class MasterService
         $v->setAttributeNames(array_column(MasterRegistry::fieldsOf($resource), 'label', 'name'));
         if ($v->fails()) {
             return [[], $v->errors()->toArray()];
+        }
+        $cross = MasterConstraints::check($this->store, $resource, $data, $id);
+        if ($cross !== []) {
+            return [[], $cross];
         }
         $clean = [];
         foreach (MasterRegistry::fieldsOf($resource) as $f) {

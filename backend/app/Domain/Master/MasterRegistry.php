@@ -13,7 +13,11 @@ namespace App\Domain\Master;
  */
 final class MasterRegistry
 {
-    public const GROUPS = [];
+    public const GROUPS = [
+        'warehouse' => 'Gudang',
+        'product' => 'Produk',
+        'partner' => 'Mitra',
+    ];
 
     private const CODE = ['name' => 'code', 'label' => 'Kode', 'kind' => 'text', 'required' => true, 'max' => 40, 'immutable' => true, 'upper' => true, 'list' => true,
         'rules' => ['regex:/^[A-Z0-9][A-Z0-9._\/-]*$/'], 'hint' => 'Huruf besar, angka, titik, garis miring, garis bawah atau strip. Tidak dapat diubah setelah dibuat.'];
@@ -23,7 +27,73 @@ final class MasterRegistry
     /** @return array<string, array<string, mixed>> */
     public static function all(): array
     {
-        return [];
+        return [
+            'warehouses' => [
+                'label' => 'Gudang', 'singular' => 'gudang', 'group' => 'warehouse', 'search' => ['code', 'name', 'city'],
+                'fields' => [
+                    self::CODE, self::NAME,
+                    ['name' => 'city', 'label' => 'Kota', 'kind' => 'text', 'max' => 100, 'list' => true],
+                    ['name' => 'address', 'label' => 'Alamat', 'kind' => 'textarea', 'max' => 1000],
+                    ['name' => 'granularity', 'label' => 'Tingkat terdalam struktur penyimpanan', 'kind' => 'select', 'required' => true, 'default' => 'BIN', 'list' => true,
+                        'options' => ['ZONE' => 'Zona', 'AISLE' => 'Lorong', 'RACK' => 'Rak', 'SHELF' => 'Tingkat', 'BIN' => 'Bin'],
+                        'hint' => 'Batas kerincian lokasi gudang ini. Tidak dapat dipersempit bila sudah ada lokasi yang lebih dalam.'],
+                ],
+            ],
+            'uoms' => [
+                'label' => 'Satuan (UoM)', 'singular' => 'satuan', 'group' => 'product', 'search' => ['code', 'name'],
+                'fields' => [self::CODE, self::NAME],
+            ],
+            'product_categories' => [
+                'label' => 'Kategori produk', 'singular' => 'kategori', 'group' => 'product', 'search' => ['code', 'name'],
+                'fields' => [self::CODE, self::NAME],
+            ],
+            'products' => [
+                'label' => 'Produk (SKU)', 'singular' => 'produk', 'group' => 'product', 'search' => ['code', 'name', 'barcode'],
+                'fields' => [
+                    self::CODE, self::NAME,
+                    ['name' => 'category_id', 'label' => 'Kategori', 'kind' => 'ref', 'ref' => 'product_categories', 'list' => true],
+                    ['name' => 'base_uom_id', 'label' => 'Satuan dasar', 'kind' => 'ref', 'ref' => 'uoms', 'required' => true, 'immutable' => true, 'list' => true],
+                    ['name' => 'barcode', 'label' => 'Barcode / GTIN', 'kind' => 'text', 'max' => 60, 'list' => true],
+                    ['name' => 'rotation_policy', 'label' => 'Kebijakan rotasi', 'kind' => 'select', 'required' => true, 'default' => 'FIFO', 'list' => true,
+                        'options' => ['FEFO' => 'FEFO (kedaluwarsa terdekat)', 'FIFO' => 'FIFO (masuk pertama)', 'LIFO' => 'LIFO (masuk terakhir)']],
+                    ['name' => 'track_lot', 'label' => 'Lacak nomor lot', 'kind' => 'boolean', 'default' => true],
+                    ['name' => 'track_expiry', 'label' => 'Lacak tanggal kedaluwarsa', 'kind' => 'boolean', 'default' => false, 'hint' => 'Wajib aktif untuk kebijakan FEFO.'],
+                    ['name' => 'shelf_life_days', 'label' => 'Umur simpan (hari)', 'kind' => 'number', 'min' => 1, 'max' => 36500],
+                    ['name' => 'min_remaining_shelf_life_days', 'label' => 'Sisa umur simpan minimum saat diterima (hari)', 'kind' => 'number', 'min' => 1, 'max' => 36500],
+                    ['name' => 'temperature_class', 'label' => 'Kelas suhu', 'kind' => 'select', 'required' => true, 'default' => 'AMBIENT',
+                        'options' => ['AMBIENT' => 'Suhu ruang', 'CHILLED' => 'Dingin', 'FROZEN' => 'Beku']],
+                    ['name' => 'hazmat', 'label' => 'Bahan berbahaya', 'kind' => 'boolean', 'default' => false],
+                    ['name' => 'weight_g', 'label' => 'Berat (gram)', 'kind' => 'number', 'min' => 1, 'max' => 100000000],
+                    ['name' => 'length_mm', 'label' => 'Panjang (mm)', 'kind' => 'number', 'min' => 1, 'max' => 20000],
+                    ['name' => 'width_mm', 'label' => 'Lebar (mm)', 'kind' => 'number', 'min' => 1, 'max' => 20000],
+                    ['name' => 'height_mm', 'label' => 'Tinggi (mm)', 'kind' => 'number', 'min' => 1, 'max' => 20000],
+                ],
+            ],
+            'product_packaging' => [
+                'label' => 'Kemasan produk', 'singular' => 'kemasan', 'group' => 'product', 'search' => ['code', 'name', 'barcode'],
+                'fields' => [
+                    self::CODE, self::NAME,
+                    ['name' => 'product_id', 'label' => 'Produk', 'kind' => 'ref', 'ref' => 'products', 'required' => true, 'immutable' => true, 'list' => true],
+                    ['name' => 'uom_id', 'label' => 'Satuan kemasan', 'kind' => 'ref', 'ref' => 'uoms', 'required' => true, 'list' => true],
+                    ['name' => 'base_quantity', 'label' => 'Isi (satuan dasar)', 'kind' => 'number', 'required' => true, 'min' => 1, 'max' => 1000000, 'list' => true,
+                        'hint' => 'Berapa satuan dasar produk dalam satu kemasan ini, misalnya 1 karton = 12.'],
+                    ['name' => 'barcode', 'label' => 'Barcode / GTIN kemasan', 'kind' => 'text', 'max' => 60],
+                ],
+            ],
+            'partners' => [
+                'label' => 'Mitra (pemasok, pelanggan, ekspedisi)', 'singular' => 'mitra', 'group' => 'partner', 'search' => ['code', 'name', 'email'],
+                'fields' => [
+                    self::CODE, self::NAME,
+                    ['name' => 'type', 'label' => 'Jenis', 'kind' => 'select', 'required' => true, 'immutable' => true, 'list' => true,
+                        'options' => ['SUPPLIER' => 'Pemasok', 'CUSTOMER' => 'Pelanggan', 'CARRIER' => 'Ekspedisi']],
+                    ['name' => 'contact_name', 'label' => 'Kontak', 'kind' => 'text', 'max' => 150],
+                    ['name' => 'email', 'label' => 'Email', 'kind' => 'text', 'max' => 254, 'rules' => ['email']],
+                    ['name' => 'phone', 'label' => 'Telepon', 'kind' => 'text', 'max' => 40],
+                    ['name' => 'address', 'label' => 'Alamat', 'kind' => 'textarea', 'max' => 1000],
+                    ['name' => 'tax_id', 'label' => 'NPWP', 'kind' => 'text', 'max' => 32, 'digits' => true, 'rules' => ['regex:/^\d{15,16}$/']],
+                ],
+            ],
+        ];
     }
 
     /** @return array<string, mixed>|null */
