@@ -107,6 +107,13 @@ final class MasterService
      */
     public function check(string $resource, array $input, bool $creating, ?string $id = null): array
     {
+        if ($creating) { // a field left out of a new record takes its declared default
+            foreach (MasterRegistry::fieldsOf($resource) as $f) {
+                if (array_key_exists('default', $f) && ! array_key_exists($f['name'], $input)) {
+                    $input[$f['name']] = $f['default'];
+                }
+            }
+        }
         $data = $this->normalize($resource, $input);
         $v = Validator::make($data, $this->rules($resource, $creating, $id));
         $v->setAttributeNames(array_column(MasterRegistry::fieldsOf($resource), 'label', 'name'));
