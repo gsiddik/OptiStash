@@ -26,6 +26,7 @@ import { PlatformApp } from "./Platform";
 import { MasterPage } from "./Master";
 import { Dashboard } from "./Overview";
 import { SupplierPortal } from "./SupplierPortal";
+import { IotPage, OrchestratorPage } from "./Iot";
 import {
   AuditPage,
   CapaDetailPage,
@@ -400,6 +401,18 @@ const navigation: {
         icon: "roadmap",
         permission: "integration.view",
       },
+      {
+        to: "/orchestrator",
+        label: "Orkestrasi & sinkronisasi",
+        icon: "roadmap",
+        permission: "integration.view",
+      },
+      {
+        to: "/iot",
+        label: "IoT & alarm",
+        icon: "dispatch",
+        permission: "integration.view",
+      },
     ],
   },
   {
@@ -749,6 +762,8 @@ function TenantApp() {
           <Route path="locations" element={<LocationsPage />} />
           <Route path="supplier-accounts" element={<SupplierAccountsPage />} />
           <Route path="integration" element={<IntegrationPage />} />
+          <Route path="orchestrator" element={<OrchestratorPage />} />
+          <Route path="iot" element={<IotPage />} />
           <Route path="access" element={<AccessPage />} />
           <Route path="*" element={<NotFound />} />
         </Route>
