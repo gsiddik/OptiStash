@@ -22,5 +22,6 @@ Route::get('stock-units', [I::class, 'units']);
 Route::get('stock-units/{id}/label', [I::class, 'label'])->whereUuid('id');
 Route::post('stock-units/{id}/decision', [I::class, 'decide'])->whereUuid('id');
 Route::get('putaway-tasks', [I::class, 'putawayTasks']);
+Route::get('putaway-tasks/{task}/locations', [I::class, 'taskLocations'])->whereUuid('task');
 Route::post('putaway-tasks/{task}/complete', [I::class, 'putaway'])->whereUuid('task');
 Route::get('nonconformances', [I::class, 'nonconformances']);

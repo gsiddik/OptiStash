@@ -24,7 +24,16 @@ import { can, isSupplierSession } from "./opsTypes";
 import { AccessPage } from "./Access";
 import { PlatformApp } from "./Platform";
 import { MasterPage } from "./Master";
-import { Dashboard, SupplierHome } from "./Overview";
+import { Dashboard } from "./Overview";
+import { SupplierPortal } from "./SupplierPortal";
+import {
+  AsnDetailPage,
+  AsnListPage,
+  DockPage,
+  PutawayPage,
+  QcPage,
+  ReceivingPage,
+} from "./Inbound";
 import { LocationsPage } from "./Locations";
 import { IntegrationPage } from "./Integration";
 import { SupplierAccountsPage } from "./SupplierAccounts";
@@ -242,6 +251,36 @@ const navigation: {
         label: "Akun pemasok",
         icon: "fleet",
         permission: "partner.provision",
+      },
+    ],
+  },
+  {
+    group: "INBOUND",
+    items: [
+      { to: "/asns", label: "ASN", icon: "orders", permission: "inbound.view" },
+      {
+        to: "/docks",
+        label: "Dock & gate",
+        icon: "dispatch",
+        permission: "inbound.view",
+      },
+      {
+        to: "/receiving",
+        label: "Penerimaan",
+        icon: "orders",
+        permission: "receiving.execute",
+      },
+      {
+        to: "/qc",
+        label: "QC & karantina",
+        icon: "audit",
+        permission: "inbound.view",
+      },
+      {
+        to: "/putaway",
+        label: "Putaway",
+        icon: "fleet",
+        permission: "inbound.view",
       },
     ],
   },
@@ -569,7 +608,7 @@ function TenantApp() {
   if (isSupplierSession(auth.data.data))
     return (
       <SessionContext.Provider value={auth.data.data}>
-        <SupplierHome onLogout={() => signOut(() => setLoggedOut(true))} />
+        <SupplierPortal onLogout={() => signOut(() => setLoggedOut(true))} />
       </SessionContext.Provider>
     );
   return (
@@ -581,6 +620,13 @@ function TenantApp() {
           <Route index element={<Dashboard />} />
           <Route path="master" element={<MasterPage />} />
           <Route path="master/:resource" element={<MasterPage />} />
+          <Route path="asns" element={<AsnListPage />} />
+          <Route path="asns/:id" element={<AsnDetailPage />} />
+          <Route path="docks" element={<DockPage />} />
+          <Route path="receiving" element={<ReceivingPage />} />
+          <Route path="receiving/:id" element={<ReceivingPage />} />
+          <Route path="qc" element={<QcPage />} />
+          <Route path="putaway" element={<PutawayPage />} />
           <Route path="locations" element={<LocationsPage />} />
           <Route path="supplier-accounts" element={<SupplierAccountsPage />} />
           <Route path="integration" element={<IntegrationPage />} />

@@ -126,6 +126,9 @@ class InboundTest extends TestCase
         $tasks = collect($this->getJson('/api/v1/putaway-tasks')->json('data'))->keyBy('lpn');
         $this->assertSame('Z1-A1-R1-S1-B01', $tasks[$a['lpn']]['recommended_code']);
         $this->assertSame('Z1-A1-R1-S1-B02', $tasks[$b['lpn']]['recommended_code']);
+        $choices = collect($this->getJson("/api/v1/putaway-tasks/{$tasks[$b['lpn']]['id']}/locations")->assertOk()->json('data'));
+        $this->assertSame(['Z1-A1-R1-S1-B02', 'Z1-A1-R1-S1-B03'], $choices->pluck('code')->all());
+        $this->assertTrue($choices[0]['recommended']);
 
         $this->postJson("/api/v1/putaway-tasks/{$tasks[$a['lpn']]['id']}/complete", [])->assertOk()->assertJsonPath('data.status', 'AVAILABLE')->assertJsonPath('data.location_code', 'Z1-A1-R1-S1-B01');
         // An override needs a reason and a usable location (B-01 is now full: capacity 100, 90 stored).

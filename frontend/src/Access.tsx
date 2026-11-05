@@ -47,8 +47,8 @@ export function AccessPage() {
       </div>
       {managed && (
         <div className="alert" role="status">
-          Akses dikelola di OptiNexus. Izin Anda di OptiStash mengikuti role yang
-          diberikan di OptiNexus.
+          Akses dikelola di OptiNexus. Izin Anda di OptiStash mengikuti role
+          yang diberikan di OptiNexus.
         </div>
       )}
       <ErrorBox error={roles.error ?? catalog.error} />

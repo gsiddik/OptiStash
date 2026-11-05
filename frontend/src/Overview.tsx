@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { useSession } from "./App";
-import { Brand } from "./App";
 import { can } from "./opsTypes";
 
 /** Landing page of an internal user. Module tiles appear as the modules are delivered; each is shown only to those allowed to use it. */
@@ -12,6 +11,12 @@ export function Dashboard() {
       title: "Master data",
       text: "Gudang, struktur penyimpanan, produk, kemasan, dan mitra.",
       show: can(session, "master.view"),
+    },
+    {
+      to: "/asns",
+      title: "Inbound",
+      text: "ASN, dock, penerimaan, QC, dan putaway.",
+      show: can(session, "inbound.view"),
     },
     {
       to: "/access",
@@ -37,25 +42,5 @@ export function Dashboard() {
         ))}
       </div>
     </section>
-  );
-}
-
-/** Home of a supplier's portal user (the portal itself arrives with the Inbound module). */
-export function SupplierHome({ onLogout }: { onLogout: () => Promise<void> }) {
-  const session = useSession();
-  return (
-    <main className="login">
-      <section className="login-form">
-        <Brand />
-        <h1 tabIndex={-1}>Portal pemasok</h1>
-        <p>
-          {session.name} · {session.tenant.name}
-        </p>
-        <p className="muted">
-          Pemberitahuan pengiriman (ASN) akan tersedia di portal ini.
-        </p>
-        <button onClick={() => void onLogout()}>Keluar</button>
-      </section>
-    </main>
   );
 }

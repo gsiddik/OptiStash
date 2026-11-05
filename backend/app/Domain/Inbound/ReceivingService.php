@@ -251,6 +251,15 @@ final class ReceivingService
         }, 3);
     }
 
+    /** The locations a putaway task could be completed at (same rules the completion enforces), for the override picker. */
+    public function taskLocations(string $taskId): array
+    {
+        $task = $this->store->find('putaway_tasks', $taskId);
+        $unit = $this->store->find('stock_units', $task->stock_unit_id);
+
+        return array_map(fn ($n) => ['id' => $n->id, 'code' => $n->code, 'recommended' => $n->id === $task->recommended_location_id], $this->candidates($unit));
+    }
+
     public function unit(string $id): object
     {
         $u = DB::table('stock_units as u')->where('u.tenant_id', $this->store->tenantId)->where('u.id', $id)

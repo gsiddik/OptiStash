@@ -167,6 +167,13 @@ class InboundController extends Controller
         return response()->json(['data' => (new ReceivingService(self::storeFor($r)))->putaway($task, $d['location_id'] ?? null, $d['override_reason'] ?? null)]);
     }
 
+    public function taskLocations(Request $r, string $task)
+    {
+        Access::authorize($r, 'putaway.execute', 'Akun Anda tidak boleh melakukan putaway.');
+
+        return response()->json(['data' => (new ReceivingService(self::storeFor($r)))->taskLocations($task)]);
+    }
+
     public function nonconformances(Request $r)
     {
         Access::authorize($r, 'quality.view', 'Akun Anda tidak boleh melihat data mutu.');
