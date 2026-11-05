@@ -73,7 +73,7 @@ export function Brand() {
       {!missing ? (
         <div className="brand-image">
           <img
-            src="/brand/Logo%20OptiStash%20-%201.jpg"
+            src="/brand/optistash-logo.png"
             alt="OptiStash"
             onError={() => setMissing(true)}
           />
