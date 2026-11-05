@@ -55,7 +55,8 @@ final class PermissionCatalog
         ],
         'Integration' => [
             'integration.view' => 'View integration status (OptiNexus, TMS, IoT)',
-            'integration.manage' => 'Configure transport integration, standalone mode and IoT pipelines',
+            'integration.manage' => 'Configure transport integration, standalone mode and force a sync',
+            'iot.manage' => 'Manage IoT gateways, devices and telemetry alerts',
         ],
         'Supplier portal' => [
             'supplier.portal' => 'Use the supplier portal (requires a supplier-bound membership)',
@@ -74,7 +75,7 @@ final class PermissionCatalog
     public const MODULES = [
         'analysis' => ['name' => 'Inventory analysis', 'description' => 'FSN, ABC, VED, HML, SDE, XYZ and EOQ analysis with combined matrices.', 'permissions' => ['inventory.analysis.view', 'inventory.analysis.configure']],
         'quality' => ['name' => 'Quality management (ISO 9001)', 'description' => 'Non-conformance, CAPA, calibration control, audit trail and controlled documents.', 'permissions' => ['quality.view', 'capa.manage', 'calibration.manage', 'audit.view', 'sop.manage']],
-        'iot' => ['name' => 'IoT gateway', 'description' => 'Telemetry ingestion, environmental monitoring and sensor binding.', 'permissions' => ['integration.manage']],
+        'iot' => ['name' => 'IoT gateway', 'description' => 'Telemetry ingestion, environmental monitoring and sensor binding.', 'permissions' => ['iot.manage']],
         'supplier_portal' => ['name' => 'Supplier portal', 'description' => 'External supplier self-service for purchase orders and ASNs.', 'permissions' => ['supplier.portal', 'partner.provision']],
     ];
 
@@ -101,7 +102,7 @@ final class PermissionCatalog
             'inbound.view', 'asn.manage', 'asn.approve', 'dock.manage', 'receiving.execute', 'putaway.execute', 'qc.inspect',
             'inventory.view', 'inventory.lock', 'inventory.analysis.view', 'inventory.analysis.configure', 'stocktake.manage', 'stocktake.approve',
             'outbound.view', 'outbound.manage', 'outbound.execute', 'wave.approve',
-            'quality.view', 'capa.manage', 'calibration.manage', 'sop.manage', 'audit.view', 'integration.view', 'integration.manage',
+            'quality.view', 'capa.manage', 'calibration.manage', 'sop.manage', 'audit.view', 'integration.view', 'integration.manage', 'iot.manage',
         ],
         'inbound_operator' => ['wms.access', 'master.view', 'inbound.view', 'asn.manage', 'dock.manage', 'receiving.execute', 'putaway.execute', 'inventory.view', 'quality.view'],
         'outbound_operator' => ['wms.access', 'master.view', 'outbound.view', 'outbound.execute', 'inventory.view', 'quality.view'],

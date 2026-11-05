@@ -20,7 +20,7 @@ class IotController extends Controller
 
     private function manage(Request $r): IotService
     {
-        Access::authorize($r, 'integration.manage', 'Akun Anda tidak boleh mengelola integrasi.');
+        Access::authorize($r, 'iot.manage', 'Akun Anda tidak boleh mengelola IoT.');
 
         return new IotService(self::storeFor($r));
     }
@@ -34,7 +34,7 @@ class IotController extends Controller
 
     public function setStandalone(Request $r)
     {
-        $this->manage($r);
+        Access::authorize($r, 'integration.manage', 'Akun Anda tidak boleh mengelola integrasi.');
         $d = $r->validate(['standalone' => 'required|boolean']);
 
         return response()->json(['data' => Orchestrator::setStandalone(self::storeFor($r), (bool) $d['standalone'])]);
@@ -42,7 +42,7 @@ class IotController extends Controller
 
     public function sync(Request $r)
     {
-        $this->manage($r);
+        Access::authorize($r, 'integration.manage', 'Akun Anda tidak boleh mengelola integrasi.');
         $store = self::storeFor($r);
         $result = Orchestrator::deliver($store->tenantId, true);
         $store->event('integration.force_sync', $store->tenantId, $result);

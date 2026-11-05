@@ -155,7 +155,7 @@ type Alert = {
 
 export function IotPage() {
   const session = useSession();
-  const manage = can(session, "integration.manage");
+  const manage = can(session, "iot.manage");
   const gateways = useData<{ data: Gateway[] }>("iot/gateways");
   const devices = useData<{ data: Device[] }>("iot/devices");
   const alerts = useData<{ data: Alert[] }>("iot/alerts");
