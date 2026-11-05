@@ -69,7 +69,8 @@ final class InventoryService
             ->join('products as p', fn ($j) => $j->on('p.id', '=', 'u.product_id')->on('p.tenant_id', '=', 'u.tenant_id'))
             ->groupBy('p.id', 'p.code', 'p.name')->orderBy('p.code')
             ->selectRaw("p.id, p.code, p.name,
-                coalesce(sum(case when u.status = 'AVAILABLE' and not u.locked then u.quantity end), 0) as available,
+                coalesce(sum(case when u.status = 'AVAILABLE' and not u.locked then u.quantity - u.reserved_qty end), 0) as available,
+                coalesce(sum(case when u.status = 'AVAILABLE' then u.reserved_qty end), 0) as reserved,
                 coalesce(sum(case when u.status = 'AVAILABLE' and u.locked then u.quantity end), 0) as locked,
                 coalesce(sum(case when u.status = 'QUARANTINE' then u.quantity end), 0) as quarantine,
                 coalesce(sum(case when u.status = 'PENDING_PUTAWAY' then u.quantity end), 0) as pending_putaway")->get()->all();
