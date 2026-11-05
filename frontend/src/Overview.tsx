@@ -31,6 +31,12 @@ export function Dashboard() {
       show: can(session, "outbound.view"),
     },
     {
+      to: "/capas",
+      title: "Mutu ISO 9001",
+      text: "CAPA, alat ukur, dokumen SOP, pemetaan klausul, dan jejak audit.",
+      show: can(session, "quality.view"),
+    },
+    {
       to: "/access",
       title: "Akses & role",
       text: "Peran pengguna sesuai matriks hak akses gudang.",

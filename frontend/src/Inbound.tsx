@@ -612,6 +612,7 @@ function printLabel(l: Label) {
 /** Receiving at the dock: pick a truck-arrived ASN, receive its lines by pallet/carton, print the LPN label. */
 export function ReceivingPage() {
   const { id } = useParams();
+  const session = useSession();
   const arrived = useData<{ data: Row[] }>("asns?status=ARRIVED");
   const receiving = useData<{ data: Row[] }>("asns?status=RECEIVING");
   const navigate = useNavigate();
@@ -624,6 +625,15 @@ export function ReceivingPage() {
   const [category, setCategory] = useState("DAMAGED");
   const [description, setDescription] = useState("");
   const [last, setLast] = useState<Unit>();
+  const [instrument, setInstrument] = useState("");
+  const instruments = useData<{
+    data: {
+      id: string;
+      code: string;
+      name: string;
+      usability: { usable: boolean };
+    }[];
+  }>(can(session, "quality.view") ? "instruments" : "master/schema");
   const [error, setError] = useState<unknown>();
   const open = [...(arrived.data?.data ?? []), ...(receiving.data?.data ?? [])];
   const a = id ? asn.data?.data : undefined;
@@ -685,6 +695,7 @@ export function ReceivingPage() {
                   lot_no: lot || null,
                   expiry_date: expiry || null,
                   nonconforming: bad,
+                  instrument_id: instrument || null,
                   category: bad ? category : null,
                   description: bad ? description : null,
                 },
@@ -738,6 +749,36 @@ export function ReceivingPage() {
                 required={line?.track_expiry}
               />
             </Field>
+            {can(session, "quality.view") && (
+              <Field label="Alat ukur (wajib untuk barang dingin/beku)">
+                <Select
+                  value={instrument}
+                  onChange={(e) => setInstrument(e.target.value)}
+                >
+                  <option value="">Tanpa alat ukur</option>
+                  {(
+                    (
+                      instruments.data as unknown as
+                        | {
+                            data: {
+                              id: string;
+                              code: string;
+                              name: string;
+                              usability: { usable: boolean };
+                            }[];
+                          }
+                        | undefined
+                    )?.data ?? []
+                  )
+                    .filter((i) => i.usability?.usable)
+                    .map((i) => (
+                      <option key={i.id} value={i.id}>
+                        {i.code} · {i.name}
+                      </option>
+                    ))}
+                </Select>
+              </Field>
+            )}
             <label>
               <input
                 type="checkbox"

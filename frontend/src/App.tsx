@@ -27,6 +27,15 @@ import { MasterPage } from "./Master";
 import { Dashboard } from "./Overview";
 import { SupplierPortal } from "./SupplierPortal";
 import {
+  AuditPage,
+  CapaDetailPage,
+  CapaListPage,
+  DocumentDetailPage,
+  DocumentsPage,
+  InstrumentsPage,
+  IsoMapPage,
+} from "./Quality";
+import {
   OrderDetailPage,
   OrderListPage,
   ShipmentsPage,
@@ -340,6 +349,41 @@ const navigation: {
         label: "Analisis persediaan",
         icon: "roadmap",
         permission: "inventory.analysis.view",
+      },
+    ],
+  },
+  {
+    group: "MUTU (ISO 9001)",
+    items: [
+      {
+        to: "/capas",
+        label: "CAPA",
+        icon: "audit",
+        permission: "quality.view",
+      },
+      {
+        to: "/instruments",
+        label: "Alat ukur",
+        icon: "fleet",
+        permission: "quality.view",
+      },
+      {
+        to: "/documents",
+        label: "Dokumen SOP",
+        icon: "orders",
+        permission: "quality.view",
+      },
+      {
+        to: "/iso-map",
+        label: "Pemetaan ISO",
+        icon: "roadmap",
+        permission: "quality.view",
+      },
+      {
+        to: "/audit",
+        label: "Jejak audit",
+        icon: "audit",
+        permission: "audit.view",
       },
     ],
   },
@@ -691,6 +735,13 @@ function TenantApp() {
           <Route path="waves" element={<WavesPage />} />
           <Route path="waves/:id" element={<WaveDetailPage />} />
           <Route path="shipments" element={<ShipmentsPage />} />
+          <Route path="capas" element={<CapaListPage />} />
+          <Route path="capas/:id" element={<CapaDetailPage />} />
+          <Route path="instruments" element={<InstrumentsPage />} />
+          <Route path="documents" element={<DocumentsPage />} />
+          <Route path="documents/:id" element={<DocumentDetailPage />} />
+          <Route path="iso-map" element={<IsoMapPage />} />
+          <Route path="audit" element={<AuditPage />} />
           <Route path="stock-map" element={<StockMapPage />} />
           <Route path="stocktakes" element={<StocktakeListPage />} />
           <Route path="stocktakes/:id" element={<StocktakeDetailPage />} />
