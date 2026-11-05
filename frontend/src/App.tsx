@@ -27,6 +27,12 @@ import { MasterPage } from "./Master";
 import { Dashboard } from "./Overview";
 import { SupplierPortal } from "./SupplierPortal";
 import {
+  AnalysisPage,
+  StockMapPage,
+  StocktakeDetailPage,
+  StocktakeListPage,
+} from "./Inventory";
+import {
   AsnDetailPage,
   AsnListPage,
   DockPage,
@@ -281,6 +287,29 @@ const navigation: {
         label: "Putaway",
         icon: "fleet",
         permission: "inbound.view",
+      },
+    ],
+  },
+  {
+    group: "PERSEDIAAN",
+    items: [
+      {
+        to: "/stock-map",
+        label: "Peta stok",
+        icon: "master",
+        permission: "inventory.view",
+      },
+      {
+        to: "/stocktakes",
+        label: "Cycle count",
+        icon: "audit",
+        permission: "stocktake.manage",
+      },
+      {
+        to: "/analysis",
+        label: "Analisis persediaan",
+        icon: "roadmap",
+        permission: "inventory.analysis.view",
       },
     ],
   },
@@ -627,6 +656,10 @@ function TenantApp() {
           <Route path="receiving/:id" element={<ReceivingPage />} />
           <Route path="qc" element={<QcPage />} />
           <Route path="putaway" element={<PutawayPage />} />
+          <Route path="stock-map" element={<StockMapPage />} />
+          <Route path="stocktakes" element={<StocktakeListPage />} />
+          <Route path="stocktakes/:id" element={<StocktakeDetailPage />} />
+          <Route path="analysis" element={<AnalysisPage />} />
           <Route path="locations" element={<LocationsPage />} />
           <Route path="supplier-accounts" element={<SupplierAccountsPage />} />
           <Route path="integration" element={<IntegrationPage />} />

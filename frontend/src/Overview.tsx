@@ -19,6 +19,12 @@ export function Dashboard() {
       show: can(session, "inbound.view"),
     },
     {
+      to: "/stock-map",
+      title: "Persediaan",
+      text: "Peta stok, kunci stok, cycle count, dan analisis ABC/FSN/VED/HML/SDE/XYZ/EOQ.",
+      show: can(session, "inventory.view"),
+    },
+    {
       to: "/access",
       title: "Akses & role",
       text: "Peran pengguna sesuai matriks hak akses gudang.",
