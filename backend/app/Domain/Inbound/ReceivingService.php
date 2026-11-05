@@ -32,7 +32,7 @@ final class ReceivingService
      * Receives one pallet/carton of an ASN line. A conforming unit waits for putaway; a nonconforming one is quarantined at once and
      * opens a non-conformance record, so it can never be put away or picked until a quality decision releases it.
      *
-     * @param  array{lot_no?:?string,expiry_date?:?string,nonconforming?:bool,category?:?string,description?:?string}  $data
+     * @param  array{lot_no?:?string,expiry_date?:?string,nonconforming?:bool,category?:?string,description?:?string,instrument_id?:?string}  $data
      */
     public function receive(string $asnLineId, int $qty, array $data): object
     {
@@ -42,6 +42,12 @@ final class ReceivingService
             $asn = $this->store->find('asns', $line->asn_id, true);
             abort_unless(in_array($asn->status, ['ARRIVED', 'RECEIVING'], true), 422, 'Penerimaan hanya dapat dilakukan setelah truk gate-in dan sebelum ASN ditutup.');
             $product = $this->store->find('products', $line->product_id);
+            // Chilled and frozen goods are measured at the dock: a calibrated, usable instrument is required (ISO 9001:2015 7.1.5).
+            $instrument = null;
+            if ($product->temperature_class !== 'AMBIENT' || ! empty($data['instrument_id'])) {
+                abort_if(empty($data['instrument_id']), 422, "Produk {$product->code} berkelas suhu {$product->temperature_class}: pilih alat ukur yang terkalibrasi.");
+                $instrument = (new \App\Domain\Quality\CalibrationService($this->store))->assertUsable($data['instrument_id']);
+            }
             abort_if($line->received_qty + $qty > $line->expected_qty, 422, 'Jumlah melebihi sisa ASN ('.($line->expected_qty - $line->received_qty).'). Lebih kirim harus diselesaikan dengan pemasok.');
 
             $lot = isset($data['lot_no']) && trim($data['lot_no']) !== '' ? trim($data['lot_no']) : null;
@@ -76,7 +82,7 @@ final class ReceivingService
             DB::table('asn_lines')->where('tenant_id', $this->store->tenantId)->where('id', $line->id)->update(['received_qty' => $line->received_qty + $qty]);
             DB::table('asns')->where('tenant_id', $this->store->tenantId)->where('id', $asn->id)->update(['status' => 'RECEIVING', 'updated_at' => now()]);
             $this->movement($unitId, 'RECEIVE', $qty, null, null, null);
-            $this->store->event('receiving.received', $unitId, ['asn' => $asn->number, 'lpn' => $lpn, 'product' => $product->code, 'quantity' => $qty, 'nonconforming' => $nonconforming]);
+            $this->store->event('receiving.received', $unitId, ['asn' => $asn->number, 'lpn' => $lpn, 'product' => $product->code, 'quantity' => $qty, 'nonconforming' => $nonconforming, 'instrument' => $instrument?->code]);
 
             if ($nonconforming) {
                 $this->openNonconformance($unitId, $category, trim((string) $data['description']));

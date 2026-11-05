@@ -124,7 +124,7 @@ class InboundController extends Controller
         Access::authorize($r, 'receiving.execute', 'Akun Anda tidak boleh menerima barang.');
         $d = $r->validate([
             'quantity' => 'required|integer|min:1|max:10000000', 'lot_no' => 'nullable|string|max:60', 'expiry_date' => 'nullable|date_format:Y-m-d',
-            'nonconforming' => 'nullable|boolean', 'category' => 'nullable|string|max:20', 'description' => 'nullable|string|max:1000',
+            'nonconforming' => 'nullable|boolean', 'category' => 'nullable|string|max:20', 'description' => 'nullable|string|max:1000', 'instrument_id' => 'nullable|uuid',
         ]);
 
         return response()->json(['data' => (new ReceivingService(self::storeFor($r)))->receive($line, $d['quantity'], $d)], 201);

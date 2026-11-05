@@ -38,6 +38,7 @@ Route::middleware(['auth', 'tenant', 'throttle:120,1'])->prefix('api/v1')->group
         require __DIR__.'/inbound.php';
         require __DIR__.'/inventory.php';
         require __DIR__.'/outbound.php';
+        require __DIR__.'/quality.php';
     });
     Route::middleware(SupplierAccess::class)->group(function () {
         require __DIR__.'/supplier.php';

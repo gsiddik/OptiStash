@@ -101,7 +101,7 @@ final class PermissionCatalog
             'inbound.view', 'asn.manage', 'asn.approve', 'dock.manage', 'receiving.execute', 'putaway.execute', 'qc.inspect',
             'inventory.view', 'inventory.lock', 'inventory.analysis.view', 'inventory.analysis.configure', 'stocktake.manage', 'stocktake.approve',
             'outbound.view', 'outbound.manage', 'outbound.execute', 'wave.approve',
-            'quality.view', 'capa.manage', 'integration.view', 'integration.manage',
+            'quality.view', 'capa.manage', 'calibration.manage', 'sop.manage', 'audit.view', 'integration.view', 'integration.manage',
         ],
         'inbound_operator' => ['wms.access', 'master.view', 'inbound.view', 'asn.manage', 'dock.manage', 'receiving.execute', 'putaway.execute', 'inventory.view', 'quality.view'],
         'outbound_operator' => ['wms.access', 'master.view', 'outbound.view', 'outbound.execute', 'inventory.view', 'quality.view'],
