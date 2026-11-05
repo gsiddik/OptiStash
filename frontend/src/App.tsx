@@ -27,6 +27,13 @@ import { MasterPage } from "./Master";
 import { Dashboard } from "./Overview";
 import { SupplierPortal } from "./SupplierPortal";
 import {
+  OrderDetailPage,
+  OrderListPage,
+  ShipmentsPage,
+  WaveDetailPage,
+  WavesPage,
+} from "./Outbound";
+import {
   AnalysisPage,
   StockMapPage,
   StocktakeDetailPage,
@@ -287,6 +294,29 @@ const navigation: {
         label: "Putaway",
         icon: "fleet",
         permission: "inbound.view",
+      },
+    ],
+  },
+  {
+    group: "OUTBOUND",
+    items: [
+      {
+        to: "/outbound",
+        label: "Pesanan keluar",
+        icon: "orders",
+        permission: "outbound.view",
+      },
+      {
+        to: "/waves",
+        label: "Wave & picking",
+        icon: "dispatch",
+        permission: "outbound.view",
+      },
+      {
+        to: "/shipments",
+        label: "Pengiriman",
+        icon: "fleet",
+        permission: "outbound.view",
       },
     ],
   },
@@ -656,6 +686,11 @@ function TenantApp() {
           <Route path="receiving/:id" element={<ReceivingPage />} />
           <Route path="qc" element={<QcPage />} />
           <Route path="putaway" element={<PutawayPage />} />
+          <Route path="outbound" element={<OrderListPage />} />
+          <Route path="outbound/:id" element={<OrderDetailPage />} />
+          <Route path="waves" element={<WavesPage />} />
+          <Route path="waves/:id" element={<WaveDetailPage />} />
+          <Route path="shipments" element={<ShipmentsPage />} />
           <Route path="stock-map" element={<StockMapPage />} />
           <Route path="stocktakes" element={<StocktakeListPage />} />
           <Route path="stocktakes/:id" element={<StocktakeDetailPage />} />

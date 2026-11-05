@@ -25,6 +25,12 @@ export function Dashboard() {
       show: can(session, "inventory.view"),
     },
     {
+      to: "/outbound",
+      title: "Outbound",
+      text: "Pesanan, alokasi FEFO/FIFO, wave picking, packing, dan pengiriman.",
+      show: can(session, "outbound.view"),
+    },
+    {
       to: "/access",
       title: "Akses & role",
       text: "Peran pengguna sesuai matriks hak akses gudang.",
