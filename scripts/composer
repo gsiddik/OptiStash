@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+proxy_args=()
+if [ -n "${HTTPS_PROXY:-}" ]; then
+  mapfile -t proxy_info < <(python3 - <<'PY'
+import os, socket, urllib.parse
+host=urllib.parse.urlparse(os.environ['HTTPS_PROXY']).hostname
+print(host)
+print(socket.gethostbyname(host))
+PY
+  )
+  proxy_args+=(--add-host "${proxy_info[0]}:${proxy_info[1]}")
+fi
+exec docker run --rm --network host "${proxy_args[@]}" -u "$(id -u):$(id -g)" -e HTTPS_PROXY -e HTTP_PROXY -e APP_ENV=local -e COMPOSER_HOME=/tmp/composer -e COMPOSER_CAFILE=/tmp/cloud-ca.crt -v /etc/ssl/certs/ca-certificates.crt:/tmp/cloud-ca.crt:ro -v "$root_dir:/app" -w /app/backend optistash-dev-php composer "$@"

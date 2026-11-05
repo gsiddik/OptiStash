@@ -1,0 +1,28 @@
+# Build context is the repository root (docker-compose.yml, the container package). Nothing from a developer's working copy may reach an
+# image: environment files, installed dependencies, caches, logs, uploads, tests, test reports and VCS data. The development runtime
+# (compose.yaml) builds from docker/ and does not use this file.
+.git
+.github
+.local
+**/.env
+**/.env.*
+!**/.env.example
+**/node_modules
+**/vendor
+**/dist
+**/coverage
+**/test-results
+**/playwright-report
+backend/tests
+backend/.phpunit.cache
+backend/.phpunit.result.cache
+backend/storage/app
+backend/storage/logs
+backend/storage/framework
+backend/bootstrap/cache
+backend/database/*.sqlite
+frontend/e2e
+**/*.log
+**/.DS_Store
+docs
+scripts

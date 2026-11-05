@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+proxy_args=()
+if [ -n "${HTTPS_PROXY:-}" ]; then
+  mapfile -t proxy_info < <(python3 - <<'PY'
+import os, socket, urllib.parse
+host=urllib.parse.urlparse(os.environ['HTTPS_PROXY']).hostname
+print(host)
+print(socket.gethostbyname(host))
+PY
+  )
+  proxy_args+=(--add-host "${proxy_info[0]}:${proxy_info[1]}")
+fi
+export DOCKER_CONFIG="${DOCKER_CONFIG:-$root_dir/.local/docker}"
+docker build --network host "${proxy_args[@]}" --secret id=ca_bundle,src=/etc/ssl/certs/ca-certificates.crt --build-arg https_proxy="${HTTPS_PROXY:-}" --build-arg http_proxy="${HTTP_PROXY:-}" -t optistash-dev-php -f "$root_dir/docker/php.Dockerfile" "$root_dir/docker"

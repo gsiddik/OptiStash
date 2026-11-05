@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+root_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+exec docker run --rm --network host -u "$(id -u):$(id -g)" -e APP_ENV -e APP_KEY -e DB_CONNECTION -e DB_HOST -e DB_PORT -e DB_DATABASE -e DB_USERNAME -e DB_PASSWORD -e OPTISTASH_DEMO_PASSWORD -v "$root_dir:/app" -w /app/backend optistash-dev-php php "$@"

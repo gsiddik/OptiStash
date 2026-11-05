@@ -1,0 +1,162 @@
+# OptiStash container package: PostgreSQL, one-shot bootstrap job, API (php-fpm + nginx) and the console (SPA behind nginx).
+# It is what OptiNexus deploy/optiecosystem runs next to the other Opti products. compose.yaml (PHP built-in server, source mounted)
+# stays the development runtime and is what `docker compose` picks without -f, so name this file explicitly:
+#   docker compose -f docker-compose.container.yml --env-file <env file> up -d
+#
+# Two kinds of settings, kept apart on purpose:
+#   * the env file is read by Compose for ${...} interpolation only (never commit it);
+#   * the runtime environment of the containers is exactly the `environment:` blocks below, identical for every PHP role (x-stash-env),
+#     so a changed secret needs `docker compose up -d` (containers re-created), never an image rebuild.
+# Only the `bootstrap` job migrates. api waits for it (service_completed_successfully, and the entrypoint also waits for a current schema).
+# The scheduler container runs `schedule:work` (reserved for the integration outbox and the IoT/analysis jobs of later modules).
+name: optistash
+
+x-stash-env: &stash-env
+  APP_NAME: OptiStash
+  APP_ENV: ${APP_ENV:-production}
+  APP_KEY: ${APP_KEY:?set APP_KEY in the env file}
+  APP_DEBUG: ${APP_DEBUG:-false}
+  # The console origin: the SPA, its /api proxy, the SSO callback and the post-logout return all live there.
+  APP_URL: ${STASH_PUBLIC_URL:-http://localhost:5210}
+  OPTISTASH_FRONTEND_URL: ${STASH_PUBLIC_URL:-http://localhost:5210}
+  DB_CONNECTION: pgsql
+  DB_HOST: postgres
+  DB_PORT: 5432
+  DB_DATABASE: ${DB_DATABASE:-optistash}
+  DB_USERNAME: ${DB_USERNAME:-optistash}
+  DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in the env file}
+  SESSION_DRIVER: database
+  CACHE_STORE: database
+  QUEUE_CONNECTION: database
+  LOG_CHANNEL: stderr
+  OPTISTASH_DEPLOYMENT_MODE: ${OPTISTASH_DEPLOYMENT_MODE:-standalone}
+  OPTISTASH_STANDALONE_TENANT: ${OPTISTASH_STANDALONE_TENANT:-demo}
+  OPTISTASH_IDENTITY_MODE: ${OPTISTASH_IDENTITY_MODE:-local}
+  # Bootstrap only: first Superadmin (both values needed; never resets an existing password) and demo data (APP_ENV=local only).
+  OPTISTASH_PLATFORM_ADMIN_EMAIL: ${OPTISTASH_PLATFORM_ADMIN_EMAIL:-}
+  OPTISTASH_PLATFORM_ADMIN_PASSWORD: ${OPTISTASH_PLATFORM_ADMIN_PASSWORD:-}
+  OPTISTASH_SEED: ${OPTISTASH_SEED:-catalog}
+  OPTISTASH_DEMO_PASSWORD: ${OPTISTASH_DEMO_PASSWORD:-}
+  # OptiNexus adapter (docs/architecture/OPTINEXUS_ADAPTER.md). The OIDC redirect is the console origin + /api/v1/auth/sso/callback.
+  OPTINEXUS_BASE_URL: ${OPTINEXUS_BASE_URL:-}
+  OPTINEXUS_APPLICATION_CODE: ${OPTINEXUS_APPLICATION_CODE:-optistash}
+  OPTINEXUS_SSO_CLIENT_ID: ${OPTINEXUS_SSO_CLIENT_ID:-}
+  OPTINEXUS_SSO_CLIENT_SECRET: ${OPTINEXUS_SSO_CLIENT_SECRET:-}
+  OPTINEXUS_SSO_REDIRECT_URI: ${STASH_PUBLIC_URL:-http://localhost:5210}/api/v1/auth/sso/callback
+  # Service account (scopes authorization.check, commercial.read): permissions and feed pairing.
+  OPTINEXUS_SERVICE_CLIENT_ID: ${OPTINEXUS_SERVICE_CLIENT_ID:-}
+  OPTINEXUS_SERVICE_CLIENT_SECRET: ${OPTINEXUS_SERVICE_CLIENT_SECRET:-}
+  OPTINEXUS_TIMEOUT: ${OPTINEXUS_TIMEOUT:-5}
+  OPTINEXUS_FEED_PAIRING: ${OPTINEXUS_FEED_PAIRING:-auto}
+  OPTINEXUS_EVENT_WEBHOOK_SECRET: ${OPTINEXUS_EVENT_WEBHOOK_SECRET:-}
+
+x-php: &php
+  image: ${STASH_IMAGE:-optistash-backend:local}
+  restart: unless-stopped
+  environment: *stash-env
+  # Uploaded files (private disk) persist across container re-creation.
+  volumes:
+    - stash_storage:/var/www/html/storage/app
+
+services:
+  postgres:
+    image: ${POSTGRES_IMAGE:-postgres:16-alpine}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-optistash}
+      POSTGRES_USER: ${DB_USERNAME:-optistash}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in the env file}
+    volumes:
+      - stash_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-optistash} -d ${DB_DATABASE:-optistash}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  bootstrap:
+    <<: *php
+    build:
+      context: .
+      dockerfile: docker/backend/Dockerfile
+      args:
+        PHP_IMAGE: ${PHP_IMAGE:-php:8.4-fpm-alpine}
+        COMPOSER_INSTALL_FLAGS: ${COMPOSER_INSTALL_FLAGS:---prefer-dist}
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["bootstrap"]
+
+  api:
+    <<: *php
+    depends_on:
+      postgres:
+        condition: service_healthy
+      bootstrap:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "php -r 'exit(@fsockopen(\"127.0.0.1\", 9000) ? 0 : 1);'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  scheduler:
+    <<: *php
+    depends_on:
+      postgres:
+        condition: service_healthy
+      bootstrap:
+        condition: service_completed_successfully
+    command: ["php", "artisan", "schedule:work"]
+
+  web:
+    image: ${NGINX_IMAGE:-nginx:1.27-alpine}
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      BACKEND_HOST: api
+      NGINX_ENTRYPOINT_LOCAL_RESOLVERS: "1"
+      LISTEN_PORT: ${STASH_API_PORT:-8400}
+      CLIENT_MAX_BODY_SIZE: ${CLIENT_MAX_BODY_SIZE:-20m}
+    volumes:
+      - ./docker/nginx/api.conf.template:/etc/nginx/templates/default.conf.template:ro
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${STASH_API_PORT:-8400}:${STASH_API_PORT:-8400}"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:${STASH_API_PORT:-8400}/up || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  ui:
+    image: ${STASH_UI_IMAGE:-optistash-ui:local}
+    build:
+      context: .
+      dockerfile: docker/frontend/Dockerfile
+      args:
+        NODE_IMAGE: ${NODE_IMAGE:-node:24-alpine}
+        NGINX_IMAGE: ${NGINX_IMAGE:-nginx:1.27-alpine}
+    restart: unless-stopped
+    depends_on:
+      web:
+        condition: service_healthy
+    environment:
+      LISTEN_PORT: ${STASH_UI_PORT:-5210}
+      API_UPSTREAM: http://web:${STASH_API_PORT:-8400}
+      NGINX_ENTRYPOINT_LOCAL_RESOLVERS: "1"
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${STASH_UI_PORT:-5210}:${STASH_UI_PORT:-5210}"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:${STASH_UI_PORT:-5210}/nginx-health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+volumes:
+  stash_postgres_data:
+  stash_storage:

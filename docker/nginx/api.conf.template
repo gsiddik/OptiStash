@@ -1,0 +1,30 @@
+# Rendered by the nginx image at start (envsubst): LISTEN_PORT, BACKEND_HOST, CLIENT_MAX_BODY_SIZE.
+# The container listens on the same port the host publishes, so one URL (alias:port) reaches it from the browser and from other containers.
+server {
+    listen ${LISTEN_PORT};
+    server_name _;
+    # Resolve the upstream name on every request (cached 5 s) instead of once at start: containers get new addresses when they are
+    # recreated or the machine restarts, and a name resolved at start then points nowhere (502). NGINX_LOCAL_RESOLVERS is set by the
+    # nginx image from the container's resolv.conf.
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=5s ipv6=off;
+    client_max_body_size ${CLIENT_MAX_BODY_SIZE};
+
+    location = /nginx-health {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok";
+    }
+
+    # Every request goes to Laravel's front controller; the files live in the backend image, not here.
+    location / {
+        set $php_backend ${BACKEND_HOST}:9000;
+        fastcgi_pass $php_backend;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME /var/www/html/public/index.php;
+        fastcgi_param SCRIPT_NAME /index.php;
+        fastcgi_param REQUEST_URI $request_uri;
+        fastcgi_read_timeout 60s;
+        fastcgi_send_timeout 60s;
+        fastcgi_connect_timeout 5s;
+    }
+}
