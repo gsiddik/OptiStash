@@ -1,10 +1,3 @@
-import { LoadOptimizationViewer3D } from "./components/Optimizer/LoadOptimizationViewer3D";
-import { RateCardDynamicGrid } from "./components/RateCards/RateCardDynamicGrid";
-import { TenderWaterfallBoard } from "./components/Tendering/TenderWaterfallBoard";
-import { GISControlTowerMap } from "./components/Telematics/GISControlTowerMap";
-import { RadarEmbedMap } from "./components/Telematics/RadarEmbedMap";
-import { EsgCarbonDashboard } from "./components/Analytics/EsgCarbonDashboard";
-import { EdiGatewayConsole } from "./components/EDI/EdiGatewayConsole";
 import { createContext, useContext, useEffect, useState } from "react";
 import {
   Link,
@@ -27,39 +20,11 @@ import {
 } from "./components";
 import type { Session } from "./types";
 import { roles } from "./types";
-import { can, isCustomerSession, isVendorSession } from "./opsTypes";
-import { CustomerPortal } from "./CustomerPortal";
+import { can, isSupplierSession } from "./opsTypes";
 import { AccessPage } from "./Access";
 import { PlatformApp } from "./Platform";
-import { OrderCreate, OrderDetail, OrderList } from "./Orders";
-import { DispatchBoard } from "./Dispatch";
 import { MasterPage } from "./Master";
-import { SpmDetailPage, SpmListPage, SpmPrintPage } from "./Spm";
-import { TripDetailPage, TripListPage } from "./Planning";
-import { CashDetailPage, CashPage } from "./Cash";
-import { BillingPage, InvoicePage } from "./Billing";
-import { ContractDetailPage, ContractsPage } from "./Contracts";
-import { IntegrationsPage } from "./Integrations";
-import { CutoverDetailPage, CutoverPage } from "./Cutover";
-import { FleetVerificationPage } from "./FleetVerification";
-import { ReportsPage } from "./Reports";
-import { MonitoringPage, SchedulePage } from "./Schedule";
-import { RouteTemplatesPage } from "./RouteTemplates";
-import { ReopenQueuePage } from "./Reopen";
-import {
-  MarkupPage,
-  ResolverPage,
-  TariffDetailPage,
-  TariffListPage,
-} from "./Tariffs";
-import { PolicyPage } from "./Policy";
-import { TripList, TripDetail } from "./Trips";
-import { YardPage } from "./Yard";
-import { VendorsPage } from "./Vendors";
-import { FreightPage, FreightDetail } from "./Freight";
-import { VendorPortal } from "./VendorPortal";
-import { FleetPage } from "./Fleet";
-import { AuditPage, Dashboard, Roadmap } from "./Overview";
+import { Dashboard, SupplierHome } from "./Overview";
 const SessionContext = createContext<Session | null>(null);
 export function useSession() {
   const s = useContext(SessionContext);
@@ -80,7 +45,7 @@ export function Brand() {
         </div>
       ) : (
         <span>
-          Opti<span>Deli</span>
+          Opti<span>Stash</span>
         </span>
       )}
     </Link>
@@ -118,25 +83,25 @@ function Login({ onLogin }: { onLogin: () => void }) {
     <main className="login">
       <section className="login-story">
         <Brand />
-        <span className="eyebrow">TRANSPORT MANAGEMENT SYSTEM</span>
+        <span className="eyebrow">WAREHOUSE MANAGEMENT SYSTEM</span>
         <h1>
-          Satu alur.
+          Satu gudang.
           <br />
-          Setiap perjalanan.
+          Setiap stok terkendali.
         </h1>
         <p>
-          Kelola pesanan, kesiapan armada, dan keputusan dispatch dengan kontrol
-          operasional yang jelas.
+          Kelola penerimaan, penyimpanan, persediaan, dan pengeluaran barang dengan
+          kontrol mutu yang jelas.
         </p>
         <div className="stages">
-          <span>First mile</span>
-          <span>Middle mile</span>
-          <span>Last mile</span>
+          <span>Inbound</span>
+          <span>Inventory</span>
+          <span>Outbound</span>
         </div>
       </section>
       <section className="login-form">
         <span className="eyebrow">SELAMAT DATANG</span>
-        <h2>Masuk ke ruang operasional</h2>
+        <h2>Masuk ke ruang gudang</h2>
         <p className="muted">
           {sso.sso_enabled
             ? "Masuk dengan akun OptiNexus perusahaan Anda."
@@ -194,9 +159,9 @@ function Login({ onLogin }: { onLogin: () => void }) {
         )}
         {sso.sso_enabled && (
           <details className="external-login">
-            <summary>Masuk sebagai vendor atau pelanggan</summary>
+            <summary>Masuk sebagai pemasok</summary>
             <p className="muted">
-              Akun vendor dan pelanggan dibuat oleh tenant dan masuk dengan kata
+              Akun pemasok dibuat oleh tenant dan masuk dengan kata
               sandinya sendiri.
             </p>
             <Form
@@ -260,109 +225,22 @@ const navigation: {
   items: { to: string; label: string; icon: string; permission?: string }[];
 }[] = [
   {
-    group: "OPERASIONAL",
-    items: [
-      { to: "/", label: "Ringkasan", icon: "home" },
-      { to: "/orders", label: "Pemesanan", icon: "orders" },
-      { to: "/spm", label: "SPM", icon: "orders" },
-      { to: "/planning", label: "Perjalanan SPM", icon: "dispatch" },
-      { to: "/schedule", label: "Jadwal & booking", icon: "dispatch" },
-      { to: "/monitoring", label: "Papan monitoring", icon: "roadmap" },
-      { to: "/route-templates", label: "Template rute", icon: "dispatch" },
-      {
-        to: "/reopen",
-        label: "Antrean buka kembali",
-        icon: "audit",
-        permission: "spm.manage",
-      },
-      {
-        to: "/cash",
-        label: "Uang jalan",
-        icon: "audit",
-        permission: "cash.view",
-      },
-      { to: "/dispatch", label: "Board dispatch", icon: "dispatch" },
-      { to: "/fleet", label: "Armada & pengemudi", icon: "fleet" },
-      { to: "/trips", label: "Eksekusi perjalanan", icon: "dispatch" },
-      { to: "/yard", label: "Dock & yard", icon: "fleet" },
-      { to: "/vendors", label: "Vendor & portal", icon: "fleet" },
-      {
-        to: "/vendor-fleet",
-        label: "Verifikasi armada vendor",
-        icon: "fleet",
-        permission: "vendor.fleet.verify",
-      },
-      { to: "/freight", label: "Freight audit", icon: "audit" },
-    ],
+    group: "GUDANG",
+    items: [{ to: "/", label: "Ringkasan", icon: "home" }],
   },
   {
     group: "MASTER DATA",
     items: [{ to: "/master", label: "Master data", icon: "master" }],
   },
   {
-    group: "PENAGIHAN & LAPORAN",
-    items: [
-      {
-        to: "/billing",
-        label: "Penagihan",
-        icon: "orders",
-        permission: "billing.issue",
-      },
-      {
-        to: "/contracts",
-        label: "Kontrak kendaraan",
-        icon: "fleet",
-        permission: "contract.manage",
-      },
-      {
-        to: "/cutover",
-        label: "Cut-Over dari Sistem Lama",
-        icon: "roadmap",
-        permission: "cutover.manage",
-      },
-      {
-        to: "/integrations",
-        label: "Integrasi pelanggan",
-        icon: "roadmap",
-        permission: "customer.portal.provision",
-      },
-      { to: "/reports", label: "Laporan", icon: "roadmap" },
-    ],
-  },
-  {
-    group: "TARIF",
-    items: [
-      {
-        to: "/tariffs",
-        label: "Tarif jual & beli",
-        icon: "audit",
-        permission: "rate.view",
-      },
-    ],
-  },
-  {
     group: "GOVERNANCE",
     items: [
-      { to: "/policy", label: "Kebijakan margin", icon: "audit" },
-      { to: "/audit", label: "Jejak audit", icon: "audit" },
       {
         to: "/access",
         label: "Akses & role",
         icon: "audit",
         permission: "access.role.view",
       },
-      { to: "/roadmap", label: "Cakupan produk", icon: "roadmap" },
-    ],
-  },
-  {
-    group: "ENTERPRISE",
-    items: [
-      { to: "/load-optimizer", label: "3D Load Optimizer", icon: "orders" },
-      { to: "/tendering", label: "Rate & Tendering", icon: "fleet" },
-      { to: "/control-tower", label: "GIS Control Tower", icon: "dispatch" },
-      { to: "/radar", label: "Peta OptiRadar", icon: "dispatch" },
-      { to: "/esg-carbon", label: "Jejak Karbon ESG", icon: "roadmap" },
-      { to: "/edi-gateway", label: "EDI Gateway", icon: "audit" },
     ],
   },
 ];
@@ -421,12 +299,7 @@ function Shell({ onLogout }: { onLogout: () => Promise<void> }) {
   const section = navigation
     .flatMap((g) => g.items)
     .find((i) => i.to !== "/" && location.pathname.startsWith(i.to));
-  const current =
-    location.pathname === "/orders/new"
-      ? "Buat order"
-      : /^\/orders\/[^/]+$/.test(location.pathname)
-        ? "Detail order"
-        : (masterLabel ?? section?.label ?? "Ringkasan");
+  const current = masterLabel ?? section?.label ?? "Ringkasan";
   return (
     <div className={`shell ${compact ? "compact" : ""}`}>
       <a href="#content" className="skip">
@@ -528,7 +401,7 @@ function Shell({ onLogout }: { onLogout: () => Promise<void> }) {
         </nav>
         <div className="sidebar-foot">
           <span className="status-dot" />
-          <span>Workspace operasional</span>
+          <span>Workspace gudang</span>
         </div>
       </aside>
       <div className="workspace">
@@ -544,7 +417,7 @@ function Shell({ onLogout }: { onLogout: () => Promise<void> }) {
             </button>
             <strong>{session.tenant.name}</strong>
             <span className="header-separator" />
-            <span className="muted">Transport Management</span>
+            <span className="muted">Warehouse Management</span>
           </div>
           <div className="identity">
             <div>
@@ -601,7 +474,7 @@ function Shell({ onLogout }: { onLogout: () => Promise<void> }) {
           </ErrorBoundary>
         </main>
         <footer>
-          OptiStash <span>First mile · Middle mile · Last mile</span>
+          OptiStash <span>Inbound · Inventory · Outbound</span>
         </footer>
       </div>
     </div>
@@ -665,16 +538,10 @@ function TenantApp() {
       />
     );
   }
-  if (isCustomerSession(auth.data.data))
+  if (isSupplierSession(auth.data.data))
     return (
       <SessionContext.Provider value={auth.data.data}>
-        <CustomerPortal onLogout={() => signOut(() => setLoggedOut(true))} />
-      </SessionContext.Provider>
-    );
-  if (isVendorSession(auth.data.data))
-    return (
-      <SessionContext.Provider value={auth.data.data}>
-        <VendorPortal onLogout={() => signOut(() => setLoggedOut(true))} />
+        <SupplierHome onLogout={() => signOut(() => setLoggedOut(true))} />
       </SessionContext.Provider>
     );
   return (
@@ -684,61 +551,9 @@ function TenantApp() {
           element={<Shell onLogout={() => signOut(() => setLoggedOut(true))} />}
         >
           <Route index element={<Dashboard />} />
-          <Route path="orders" element={<OrderList />} />
-          <Route path="orders/new" element={<OrderCreate />} />
-          <Route path="orders/:id" element={<OrderDetail />} />
-          <Route path="dispatch" element={<DispatchBoard />} />
-          <Route path="vendor-fleet" element={<FleetVerificationPage />} />
-          <Route path="cutover" element={<CutoverPage />} />
-          <Route path="cutover/:id" element={<CutoverDetailPage />} />
-          <Route path="integrations" element={<IntegrationsPage />} />
-          <Route path="contracts" element={<ContractsPage />} />
-          <Route path="contracts/:id" element={<ContractDetailPage />} />
-          <Route path="billing" element={<BillingPage />} />
-          <Route path="billing/invoices/:id" element={<InvoicePage />} />
-          <Route path="reports" element={<ReportsPage />} />
-          <Route path="schedule" element={<SchedulePage />} />
-          <Route path="monitoring" element={<MonitoringPage />} />
-          <Route path="route-templates" element={<RouteTemplatesPage />} />
-          <Route path="reopen" element={<ReopenQueuePage />} />
-          <Route path="planning" element={<TripListPage />} />
-          <Route path="planning/:id" element={<TripDetailPage />} />
-          <Route path="cash" element={<CashPage />} />
-          <Route path="cash/:id" element={<CashDetailPage />} />
-          <Route path="spm" element={<SpmListPage />} />
-          <Route path="spm/:id" element={<SpmDetailPage />} />
-          <Route path="spm/:id/print" element={<SpmPrintPage />} />
           <Route path="master" element={<MasterPage />} />
           <Route path="master/:resource" element={<MasterPage />} />
-          <Route path="tariffs" element={<TariffListPage />} />
-          <Route path="tariffs/markups" element={<MarkupPage />} />
-          <Route path="tariffs/test" element={<ResolverPage />} />
-          <Route path="tariffs/:id" element={<TariffDetailPage />} />
-          <Route path="fleet" element={<FleetPage />} />
-          <Route path="trips" element={<TripList />} />
-          <Route path="trips/:id" element={<TripDetail />} />
-          <Route path="yard" element={<YardPage />} />
-          <Route path="vendors" element={<VendorsPage />} />
-          <Route path="freight" element={<FreightPage />} />
-          <Route path="freight/:id" element={<FreightDetail />} />
-          <Route path="load-optimizer" element={<LoadOptimizationViewer3D />} />
-          <Route
-            path="tendering"
-            element={
-              <div className="space-y-6">
-                <TenderWaterfallBoard />
-                <RateCardDynamicGrid />
-              </div>
-            }
-          />
-          <Route path="control-tower" element={<GISControlTowerMap />} />
-          <Route path="radar" element={<RadarEmbedMap />} />
-          <Route path="esg-carbon" element={<EsgCarbonDashboard />} />
-          <Route path="edi-gateway" element={<EdiGatewayConsole />} />
-          <Route path="policy" element={<PolicyPage />} />
-          <Route path="audit" element={<AuditPage />} />
           <Route path="access" element={<AccessPage />} />
-          <Route path="roadmap" element={<Roadmap />} />
           <Route path="*" element={<NotFound />} />
         </Route>
         <Route path="login" element={<Navigate to="/" replace />} />
