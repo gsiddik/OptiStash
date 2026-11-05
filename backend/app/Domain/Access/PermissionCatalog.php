@@ -98,9 +98,9 @@ final class PermissionCatalog
         'viewer' => ['wms.access', 'master.view', 'inbound.view', 'inventory.view', 'outbound.view'],
         'warehouse_manager' => [
             'wms.access', 'master.view', 'master.manage', 'location.block', 'partner.provision',
-            'inbound.view', 'asn.manage', 'asn.approve', 'dock.manage', 'qc.inspect',
+            'inbound.view', 'asn.manage', 'asn.approve', 'dock.manage', 'receiving.execute', 'putaway.execute', 'qc.inspect',
             'inventory.view', 'inventory.lock', 'inventory.analysis.view', 'inventory.analysis.configure', 'stocktake.manage', 'stocktake.approve',
-            'outbound.view', 'outbound.manage', 'wave.approve',
+            'outbound.view', 'outbound.manage', 'outbound.execute', 'wave.approve',
             'quality.view', 'capa.manage', 'integration.view', 'integration.manage',
         ],
         'inbound_operator' => ['wms.access', 'master.view', 'inbound.view', 'asn.manage', 'dock.manage', 'receiving.execute', 'putaway.execute', 'inventory.view', 'quality.view'],

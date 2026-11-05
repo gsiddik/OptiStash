@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\OptinexusEventController;
 use App\Http\Controllers\Api\PlatformController;
 use App\Http\Controllers\Api\SsoController;
 use App\Http\Middleware\InternalAccess;
+use App\Http\Middleware\SupplierAccess;
 use App\Http\Middleware\PlatformContext;
 use Illuminate\Support\Facades\Route;
 
@@ -34,5 +35,9 @@ Route::middleware(['auth', 'tenant', 'throttle:120,1'])->prefix('api/v1')->group
         require __DIR__.'/master.php';
         require __DIR__.'/access.php';
         require __DIR__.'/warehouse.php';
+        require __DIR__.'/inbound.php';
+    });
+    Route::middleware(SupplierAccess::class)->group(function () {
+        require __DIR__.'/supplier.php';
     });
 });

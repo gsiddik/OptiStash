@@ -39,6 +39,13 @@ final class MasterRegistry
                         'hint' => 'Batas kerincian lokasi gudang ini. Tidak dapat dipersempit bila sudah ada lokasi yang lebih dalam.'],
                 ],
             ],
+            'docks' => [
+                'label' => 'Dock', 'singular' => 'dock', 'group' => 'warehouse', 'search' => ['code', 'name'],
+                'fields' => [
+                    self::CODE, self::NAME,
+                    ['name' => 'warehouse_id', 'label' => 'Gudang', 'kind' => 'ref', 'ref' => 'warehouses', 'required' => true, 'immutable' => true, 'list' => true],
+                ],
+            ],
             'uoms' => [
                 'label' => 'Satuan (UoM)', 'singular' => 'satuan', 'group' => 'product', 'search' => ['code', 'name'],
                 'fields' => [self::CODE, self::NAME],
