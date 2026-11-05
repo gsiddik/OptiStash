@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\IotController;
 use App\Http\Controllers\Api\OptinexusEventController;
 use App\Http\Controllers\Api\PlatformController;
 use App\Http\Controllers\Api\SsoController;
@@ -19,6 +20,7 @@ Route::get('/api/v1/auth/sso/redirect', [SsoController::class, 'redirect'])->mid
 Route::get('/api/v1/auth/sso/callback', [SsoController::class, 'callback'])->middleware('throttle:30,1');
 Route::post('/api/v1/integration/optinexus/backchannel-logout', [SsoController::class, 'backchannelLogout'])->middleware('throttle:120,1');
 Route::post('/api/v1/integration/optinexus/events', [OptinexusEventController::class, 'receive'])->middleware('throttle:600,1');
+Route::post('/api/v1/integration/iot/readings', [IotController::class, 'ingest'])->middleware('throttle:600,1');
 Route::post('/api/v1/platform/auth/login', [PlatformController::class, 'login'])->middleware('throttle:login');
 Route::middleware(['auth', PlatformContext::class, 'throttle:120,1'])->prefix('api/v1/platform')->group(function () {
     Route::get('auth/me', [PlatformController::class, 'me']);
@@ -39,6 +41,7 @@ Route::middleware(['auth', 'tenant', 'throttle:120,1'])->prefix('api/v1')->group
         require __DIR__.'/inventory.php';
         require __DIR__.'/outbound.php';
         require __DIR__.'/quality.php';
+        require __DIR__.'/integration.php';
     });
     Route::middleware(SupplierAccess::class)->group(function () {
         require __DIR__.'/supplier.php';

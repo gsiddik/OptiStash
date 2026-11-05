@@ -2,11 +2,14 @@
 
 use App\Domain\Access\SystemRoles;
 use App\Domain\Integration\Optinexus\OptinexusManifest;
+use App\Domain\Integration\Orchestrator;
+use App\Domain\Iot\IotService;
 use App\Domain\Platform\PlatformAccess;
 use App\Models\User;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schedule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 
@@ -51,3 +54,15 @@ Artisan::command('optistash:nexus:manifest {--output= : Write the JSON to this f
 
     return 0;
 })->purpose('Print the OptiStash manifest v2 for OptiNexus');
+
+Artisan::command('optistash:outbox:deliver {--tenant= : Only this tenant id} {--force : Also retry events that ran out of attempts}', function () {
+    $r = Orchestrator::deliver($this->option('tenant') ?: null, (bool) $this->option('force'));
+    $this->info("Delivered {$r['delivered']}, failed {$r['failed']}".($r['skipped'] ? " (skipped: {$r['skipped']})" : '').'.');
+})->purpose('Deliver pending outbox events through the transport integration of each tenant');
+
+Artisan::command('optistash:iot:check-stale', function () {
+    $this->info(IotService::checkStale().' stale-device alert(s) raised.');
+})->purpose('Raise alerts for IoT devices that stopped reporting');
+
+Schedule::command('optistash:outbox:deliver')->everyMinute()->withoutOverlapping();
+Schedule::command('optistash:iot:check-stale')->everyFiveMinutes()->withoutOverlapping();

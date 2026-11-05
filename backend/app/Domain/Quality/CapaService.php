@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
  */
 final class CapaService
 {
-    public const NC_SOURCES = ['STOCKTAKE', 'OUTBOUND', 'AUDIT', 'OTHER'];
+    public const NC_SOURCES = ['STOCKTAKE', 'OUTBOUND', 'AUDIT', 'IOT', 'OTHER'];
 
     public const NC_CATEGORIES = ['DAMAGED', 'EXPIRED', 'WRONG_ITEM', 'QUANTITY', 'TEMPERATURE', 'OTHER'];
 

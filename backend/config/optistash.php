@@ -64,4 +64,7 @@ return [
             'tolerance_seconds' => 300,
         ],
     ],
+
+    // Signing secret for events delivered to a tenant's third-party transport API (docs/architecture/INTEGRATION_ORCHESTRATOR.md).
+    'outbox' => ['secret' => env('OPTISTASH_OUTBOX_SECRET')],
 ];
