@@ -237,6 +237,19 @@ class OptinexusSsoTest extends TestCase
         $this->assertSame(['inventory.analysis.configure', 'wms.access'], $this->getJson('/api/v1/auth/me')->json('data.permissions'));
     }
 
+    public function test_a_central_admin_role_that_lists_the_supplier_portal_permission_stays_an_internal_user(): void
+    {
+        // "Superadmin Tenant" in OptiNexus holds every permission of the application, supplier.portal included.
+        $this->grant['permissions'] = ['optistash.wms.access', 'optistash.master.manage', 'optistash.supplier.portal', 'optistash.partner.provision'];
+        $this->grant['entitled'] = ['optistash.supplier_portal'];
+        $this->assertSame('https://stash.test/', $this->signIn());
+        $me = $this->getJson('/api/v1/auth/me')->assertOk();
+        $this->assertSame(['master.manage', 'partner.provision', 'wms.access'], $me->json('data.permissions'));
+        $this->assertFalse($me->json('data.tenant.supplier'));
+        $this->getJson('/api/v1/master/schema')->assertOk();
+        $this->getJson('/api/v1/supplier/asns')->assertForbidden();
+    }
+
     public function test_manifest_lists_every_permission_under_the_application_namespace(): void
     {
         $this->artisan('optistash:nexus:manifest', ['--output' => $file = tempnam(sys_get_temp_dir(), 'manifest')])->assertSuccessful();

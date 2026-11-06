@@ -45,6 +45,9 @@ class TenantContext
             try {
                 // OptiNexus decides; the answer is cached at most 300 s. An outage fails closed.
                 $permissions = app(NexusPermissionSource::class)->forMembership($membership, $tenant);
+                // A central role such as "Superadmin Tenant" lists every permission, the supplier portal one included. That permission only
+                // means something for a supplier-bound membership (local account); an internal person never becomes a supplier by holding it.
+                $permissions = array_values(array_diff($permissions, ['supplier.portal']));
             } catch (IdentityProviderUnavailable) {
                 abort(503, 'Layanan identitas OptiNexus sedang tidak tersedia. Coba lagi sebentar.');
             }
@@ -60,7 +63,7 @@ class TenantContext
         $request->attributes->set('role', $membership->role);
         $request->attributes->set('permissions', $permissions);
         $supplierId = $membership->supplier_id ?? null;
-        if ($supplierId !== null || in_array('supplier.portal', $permissions, true)) {
+        if ($supplierId !== null) {
             abort_unless($supplierId && DB::table('partners')->where('id', $supplierId)->where('tenant_id', $tenant->id)->where('type', 'SUPPLIER')->where('active', true)->exists(), 403, 'Keanggotaan pemasok tidak aktif.');
             $request->attributes->set('supplier_id', $supplierId);
         }
