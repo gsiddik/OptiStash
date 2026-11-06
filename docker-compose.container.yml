@@ -8,7 +8,7 @@
 #   * the runtime environment of the containers is exactly the `environment:` blocks below, identical for every PHP role (x-stash-env),
 #     so a changed secret needs `docker compose up -d` (containers re-created), never an image rebuild.
 # Only the `bootstrap` job migrates. api waits for it (service_completed_successfully, and the entrypoint also waits for a current schema).
-# The scheduler container runs `schedule:work` (reserved for the integration outbox and the IoT/analysis jobs of later modules).
+# The scheduler container runs `schedule:work`: the integration outbox delivery (every minute) and the IoT stale-device check (every 5 minutes).
 name: optistash
 
 x-stash-env: &stash-env
@@ -49,6 +49,18 @@ x-stash-env: &stash-env
   OPTINEXUS_TIMEOUT: ${OPTINEXUS_TIMEOUT:-5}
   OPTINEXUS_FEED_PAIRING: ${OPTINEXUS_FEED_PAIRING:-auto}
   OPTINEXUS_EVENT_WEBHOOK_SECRET: ${OPTINEXUS_EVENT_WEBHOOK_SECRET:-}
+  # Signs events delivered to a tenant's third-party transport API (the OPTIDELI route needs the service account above with scope event.write).
+  OPTISTASH_OUTBOX_SECRET: ${OPTISTASH_OUTBOX_SECRET:-}
+  # Supplier portal invitations. log delivers nothing (an invitation is then refused outside APP_ENV=local); use the SMTP provider of the ecosystem
+  # (Postmark transactional stream, OptiNexus docs/OPERATIONAL_EMAIL.md): MAIL_MAILER=smtp, port 587, MAIL_SCHEME empty for STARTTLS.
+  MAIL_MAILER: ${MAIL_MAILER:-log}
+  MAIL_HOST: ${MAIL_HOST:-127.0.0.1}
+  MAIL_PORT: ${MAIL_PORT:-2525}
+  MAIL_SCHEME: ${MAIL_SCHEME:-}
+  MAIL_USERNAME: ${MAIL_USERNAME:-}
+  MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+  MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-hello@example.com}
+  MAIL_FROM_NAME: OptiStash
 
 x-php: &php
   image: ${STASH_IMAGE:-optistash-backend:local}

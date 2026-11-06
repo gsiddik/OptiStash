@@ -41,7 +41,7 @@ class OptinexusManifest
         }
         usort($permissions, fn ($a, $b) => strcmp($a['permission_key'], $b['permission_key']));
 
-        $catalog = ['capabilities' => $capabilities, 'permissions' => $permissions, 'scopes' => explode(' ', NexusApi::SCOPES)];
+        $catalog = ['capabilities' => $capabilities, 'permissions' => $permissions, 'scopes' => array_merge(explode(' ', NexusApi::SCOPES), [NexusApi::SCOPE_COMMERCIAL, NexusApi::SCOPE_EVENT])];
 
         return [
             'manifest_version' => self::VERSION,
@@ -50,7 +50,7 @@ class OptinexusManifest
             'application' => [
                 'application_code' => $application,
                 'name' => 'OptiStash',
-                'description' => 'Transport management: orders, dispatch, trip execution, yard and freight audit.',
+                'description' => 'Warehouse management: master data, inbound and QC, inventory, outbound, quality (CAPA, ISO 9001) and IoT integration.',
                 'frontend_url' => $frontend,
             ],
             'capabilities' => $capabilities,
