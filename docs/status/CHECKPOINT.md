@@ -29,8 +29,8 @@ Decided by the owner on 2026-11-06 and done in CP7: the OptiDeli pickup contract
 1. OptiDeli does not consume `optistash.pickup.requested` yet (it ignores unknown events), so no subscription is registered. Needs a decision on what a pickup becomes in OptiDeli.
 2. A real SMTP provider has to be set in `.state/stash.env` (`MAIL_*`) before invitations work outside `APP_ENV=local`.
 3. SaaS use: create the OIDC client and service account for `optistash` in OptiNexus (scopes `authorization.check`, `commercial.read`, `event.write`) and put the secrets in `.state/stash.env`.
-5. Not verified: container build and compose deployment of OptiStash (the Docker files were adapted, not built), browser QA (postponed by the owner), load behaviour of telemetry ingestion.
+5. Verified 2026-11-06: both images build (`optistash-backend:local`, `optistash-ui:local`); bootstrap (migrations, roles, platform admin, demo data), API, scheduler, web and console run in Podman on the ecosystem network (API 8400, console 5210); login and a write through the console proxy work. `podman compose` could not reach the daemon pipe in that session, so the stack was started with `podman run` from the rendered compose config; run `optiecosystem.ps1 up -Products stash` once the pipe is back. Not verified: browser QA (postponed by the owner), load behaviour of telemetry ingestion.
 6. Known limits: supplier-account picker and partner pickers read the first 50 partners; location picker for IoT binding lists a warehouse tree; no barcode label printer integration (label data and a browser print view only); stock analysis uses `ISSUE` movements written by picking.
 
 ## Test status
-Backend: 62 tests, 786 assertions (PostgreSQL scratch database `optistash_test`). Frontend: type-check, oxlint, 2 unit tests, production build.
+Backend: 68 tests, 839 assertions (PostgreSQL scratch database `optistash_test`). Frontend: type-check, oxlint, 2 unit tests, production build. OptiNexus: 653 tests OK.
