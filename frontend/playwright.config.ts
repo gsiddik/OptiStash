@@ -10,7 +10,12 @@ export default defineConfig({
     timezoneId: "Asia/Bangkok",
     launchOptions: {
       executablePath: process.env.CHROMIUM_PATH ?? "/usr/bin/chromium",
-      args: ["--no-sandbox"],
+      args: [
+        "--no-sandbox",
+        ...(process.env.OPTISTASH_E2E_HOST_RULES
+          ? [`--host-resolver-rules=${process.env.OPTISTASH_E2E_HOST_RULES}`]
+          : []),
+      ],
     },
     screenshot: "only-on-failure",
     trace: "off",
