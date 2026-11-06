@@ -22,7 +22,7 @@ OptiDeli needs only where to collect and what to collect. `optistash.pickup.requ
 
 The warehouse is the place only, never its zones, aisles, racks or bins. Quantities are the packed quantities summed per product in the base
 unit. Customers, prices and stock units never leave OptiStash. The event is registered in the OptiNexus event catalog
-(`OptiStashEventCatalogSeeder`). OptiDeli does not consume it yet: the subscription `ecosystem:register-event-subscription optideli "optistash.pickup.*" --url=<deli-api>/api/v1/integration/optinexus/events` is added when OptiDeli can turn it into a pickup job.
+(`OptiStashEventCatalogSeeder`). OptiDeli consumes it (OptiDeli `docs/integration/PICKUP_REQUESTS.md`): inbox, warehouse link by an operator, and an order with an SPM made by a dispatcher or by the tenant's defaults. The subscription `optideli <- optistash.pickup.*` is registered at OptiNexus.
 
 `php artisan optistash:outbox:deliver` runs every minute from the scheduler; `POST /api/v1/integration/sync` is the manual force sync.
 
