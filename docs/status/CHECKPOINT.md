@@ -24,10 +24,11 @@ Order (follows the product document): foundation -> 1 Governance & Master Data -
 `php vendor/bin/phpunit` in `backend/` against a scratch PostgreSQL database (`optistash_test`).
 
 ## Open items and owner decisions needed
-1. OptiDeli delivery contract: event type and fields OptiDeli expects for a shipment (and the subscription at the OptiNexus event broker). Until decided, `OPTIDELI` transport events stay queued.
-2. Supplier portal accounts: today an administrator sets the first password. An invitation/reset-by-email flow needs a mail provider decision.
-3. Supplier portal shows the whole active product catalog of the tenant to every supplier (needed to build an ASN). Say so if it should be limited per supplier.
-4. OptiNexus manifest and module catalog (`analysis`, `quality`, `iot`, `supplier_portal`) must be registered in OptiNexus before SaaS use; `optistash:nexus:manifest` prints it.
+Decided by the owner on 2026-11-06 and done in CP7: the OptiDeli pickup contract (warehouse place + goods, sent through the OptiNexus broker as `optistash.pickup.requested`); supplier accounts by one-time email invitation (72 h) or created directly by the tenant administrator (mail through SMTP, Postmark like the other products); the supplier portal keeps showing the whole active product catalog; manifest, event and module catalog registered in OptiNexus (`optistash.manifest.json`, `OptiStashEventCatalogSeeder`), `stash` product in `deploy/optiecosystem`.
+
+1. OptiDeli does not consume `optistash.pickup.requested` yet (it ignores unknown events), so no subscription is registered. Needs a decision on what a pickup becomes in OptiDeli.
+2. A real SMTP provider has to be set in `.state/stash.env` (`MAIL_*`) before invitations work outside `APP_ENV=local`.
+3. SaaS use: create the OIDC client and service account for `optistash` in OptiNexus (scopes `authorization.check`, `commercial.read`, `event.write`) and put the secrets in `.state/stash.env`.
 5. Not verified: container build and compose deployment of OptiStash (the Docker files were adapted, not built), browser QA (postponed by the owner), load behaviour of telemetry ingestion.
 6. Known limits: supplier-account picker and partner pickers read the first 50 partners; location picker for IoT binding lists a warehouse tree; no barcode label printer integration (label data and a browser print view only); stock analysis uses `ISSUE` movements written by picking.
 
