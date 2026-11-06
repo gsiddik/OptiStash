@@ -55,6 +55,8 @@ class OptinexusManifest
             ],
             'capabilities' => $capabilities,
             'permissions' => $permissions,
+            // Seat-controlled: OptiNexus applies the tenant's `user_limit` when it grants someone access to OptiStash (Seats screen).
+            'entitlement_limit_keys' => ['user_limit'],
             // Registration data for the operator (not imported by the manifest command; see docs/architecture/OPTINEXUS_ADAPTER.md §6).
             'service_account' => ['scopes' => $catalog['scopes']],
             'oidc_client' => [

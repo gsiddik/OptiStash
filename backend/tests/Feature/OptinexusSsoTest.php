@@ -243,6 +243,7 @@ class OptinexusSsoTest extends TestCase
         $manifest = json_decode((string) file_get_contents($file), true);
         unlink($file);
         $this->assertSame('2.0', $manifest['manifest_version']);
+        $this->assertSame(['user_limit'], $manifest['entitlement_limit_keys']);
         $keys = array_column($manifest['permissions'], 'permission_key');
         $this->assertCount(count(PermissionCatalog::codes()), $keys);
         foreach ($manifest['permissions'] as $permission) {
