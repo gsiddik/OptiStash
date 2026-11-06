@@ -250,6 +250,29 @@ class OptinexusSsoTest extends TestCase
         $this->getJson('/api/v1/supplier/asns')->assertForbidden();
     }
 
+    public function test_a_supplier_signs_in_with_its_own_password_while_staff_use_optinexus(): void
+    {
+        // Same as the vendor of OptiDeli: the account lives here, the tenant is named by its short name or its OptiNexus code.
+        $partner = (string) Str::uuid();
+        DB::table('partners')->insert(['id' => $partner, 'tenant_id' => $this->tenantId, 'code' => 'SUP1', 'name' => 'Pemasok', 'type' => 'SUPPLIER', 'active' => true, 'created_at' => now(), 'updated_at' => now()]);
+        $supplier = User::factory()->create(['email' => 'sup@pemasok.test', 'password' => 'Kata-Sandi-Kuat-1!']);
+        DB::table('memberships')->insert(['tenant_id' => $this->tenantId, 'user_id' => $supplier->id, 'role' => 'supplier', 'active' => true, 'supplier_id' => $partner, 'roles_bootstrapped' => false]);
+        $staff = User::factory()->create(['email' => 'staf@acme.test', 'password' => 'Kata-Sandi-Kuat-1!']);
+        DB::table('memberships')->insert(['tenant_id' => $this->tenantId, 'user_id' => $staff->id, 'role' => 'optinexus', 'active' => true, 'roles_bootstrapped' => true]);
+
+        // Password sign-in for staff stays closed; the staff cannot use the supplier door either.
+        $this->postJson('/api/v1/auth/login', ['email' => 'sup@pemasok.test', 'password' => 'Kata-Sandi-Kuat-1!', 'tenant' => 'acme'])->assertForbidden();
+        $this->postJson('/api/v1/auth/external-login', ['email' => 'staf@acme.test', 'password' => 'Kata-Sandi-Kuat-1!', 'tenant' => 'acme'])->assertUnprocessable();
+        $this->postJson('/api/v1/auth/external-login', ['email' => 'sup@pemasok.test', 'password' => 'salah-salah-1A!', 'tenant' => 'acme'])->assertUnprocessable();
+
+        $this->postJson('/api/v1/auth/external-login', ['email' => 'sup@pemasok.test', 'password' => 'Kata-Sandi-Kuat-1!', 'tenant' => 'acme'])->assertOk();
+        $me = $this->getJson('/api/v1/auth/me')->assertOk();
+        $this->assertTrue($me->json('data.tenant.supplier'));
+        $this->assertContains('supplier.portal', $me->json('data.permissions'));
+        $this->getJson('/api/v1/supplier/products')->assertOk();
+        $this->getJson('/api/v1/master/schema')->assertForbidden();
+    }
+
     public function test_manifest_lists_every_permission_under_the_application_namespace(): void
     {
         $this->artisan('optistash:nexus:manifest', ['--output' => $file = tempnam(sys_get_temp_dir(), 'manifest')])->assertSuccessful();
