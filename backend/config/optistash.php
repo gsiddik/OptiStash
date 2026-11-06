@@ -65,6 +65,9 @@ return [
         ],
     ],
 
+    // Calls per minute and signed-in user for the tenant API. A console page makes several calls and people move quickly between pages.
+    'api_rate_limit' => max(30, (int) env('OPTISTASH_API_RATE_LIMIT', 120)),
+
     // Signing secret for events delivered to a tenant's third-party transport API (docs/architecture/INTEGRATION_ORCHESTRATOR.md).
     'outbox' => ['secret' => env('OPTISTASH_OUTBOX_SECRET')],
 ];

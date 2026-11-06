@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Domain\Integration\CarrierFeedback;
 use App\Domain\Integration\Optinexus\TenantProvisioner;
 use App\Domain\Integration\Optinexus\WebhookSignature;
 use App\Http\Controllers\Controller;
@@ -34,8 +35,16 @@ class OptinexusEventController extends Controller
             return response()->json(['message' => 'Invalid body.', 'code' => 'WEBHOOK_BODY_INVALID'], 400);
         }
 
-        // Tenant events from OptiNexus create the tenant; any other event is accepted and ignored (no product event is consumed yet).
-        $result = $tenants->handles($event) ? $tenants->provision($event) : 'IGNORED';
+        // Tenant events from OptiNexus create the tenant; the carrier's status feedback updates a shipment; any other event is accepted and ignored.
+        $result = match (true) {
+            $tenants->handles($event) => $tenants->provision($event),
+            ($event['event_type'] ?? null) === CarrierFeedback::RECEIVED => CarrierFeedback::apply($event),
+            default => 'IGNORED',
+        };
+        // An unusable feedback event is a 4xx: OptiNexus does not retry it.
+        if ($result === 'invalid') {
+            return response()->json(['message' => 'Invalid carrier status.', 'code' => 'CARRIER_STATUS_INVALID'], 422);
+        }
 
         return response()->json(['result' => $result], 202);
     }

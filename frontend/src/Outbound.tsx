@@ -647,6 +647,22 @@ type Shipment = {
   truck_plate: string | null;
   driver_name: string | null;
   orders: { id: string; number: string; status: string }[];
+  carrier_status: string | null;
+  carrier_status_at: string | null;
+  carrier_reason: string | null;
+  carrier_events: {
+    status: string;
+    reason: string | null;
+    occurred_at: string;
+  }[];
+};
+
+const carrierLabel: Record<string, string> = {
+  ACCEPTED: "Diterima carrier",
+  REJECTED: "Ditolak carrier",
+  PICKED_UP: "Sudah dijemput",
+  DELIVERED: "Sudah terkirim",
+  CANCELLED: "Dibatalkan carrier",
 };
 type Manifest = {
   shipment: string;
@@ -761,8 +777,37 @@ export function ShipmentsPage() {
               {s.truck_plate ?? "tanpa plat"} ·{" "}
               {s.driver_name ?? "tanpa pengemudi"}
             </p>
+            {s.mode === "OPTIDELI" && s.status === "DISPATCHED" && (
+              <p>
+                <strong>Carrier (OptiDeli):</strong>{" "}
+                {s.carrier_status ? (
+                  <>
+                    <Badge
+                      value={carrierLabel[s.carrier_status] ?? s.carrier_status}
+                    />{" "}
+                    {s.carrier_reason && <span>{s.carrier_reason}</span>}
+                  </>
+                ) : (
+                  <span className="muted">menunggu tanggapan</span>
+                )}
+                {(s.carrier_events ?? []).length > 1 && (
+                  <details>
+                    <summary>Riwayat status</summary>
+                    <ul>
+                      {s.carrier_events.map((e, n) => (
+                        <li key={n}>
+                          {new Date(e.occurred_at).toLocaleString("id-ID")} ·{" "}
+                          {carrierLabel[e.status] ?? e.status}
+                          {e.reason ? ` · ${e.reason}` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                )}
+              </p>
+            )}
             <ul>
-              {s.orders.map((o) => (
+              {(s.orders ?? []).map((o) => (
                 <li key={o.id}>
                   {o.number} <Badge value={o.status} />
                 </li>

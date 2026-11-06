@@ -51,6 +51,7 @@ x-stash-env: &stash-env
   OPTINEXUS_EVENT_WEBHOOK_SECRET: ${OPTINEXUS_EVENT_WEBHOOK_SECRET:-}
   # Signs events delivered to a tenant's third-party transport API (the OPTIDELI route needs the service account above with scope event.write).
   OPTISTASH_OUTBOX_SECRET: ${OPTISTASH_OUTBOX_SECRET:-}
+  OPTISTASH_API_RATE_LIMIT: ${OPTISTASH_API_RATE_LIMIT:-120}
   # Supplier portal invitations. log delivers nothing (an invitation is then refused outside APP_ENV=local); use the SMTP provider of the ecosystem
   # (Postmark transactional stream, OptiNexus docs/OPERATIONAL_EMAIL.md): MAIL_MAILER=smtp, port 587, MAIL_SCHEME empty for STARTTLS.
   MAIL_MAILER: ${MAIL_MAILER:-log}

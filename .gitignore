@@ -14,3 +14,5 @@ test-results/
 /backend/storage/framework/*/*
 /backend/.env
 /backend/bootstrap/cache/*.php
+
+/backend/.phpunit.result.cache

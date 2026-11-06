@@ -235,8 +235,20 @@ final class ShippingService
         return $s;
     }
 
+    /** The latest 100 shipments with their orders and the carrier's status history (what the console shows on one card). */
     public function shipments(?string $status): array
     {
-        return $this->store->query('shipments')->when($status, fn ($q) => $q->where('status', $status))->orderByDesc('created_at')->limit(100)->get()->all();
+        $rows = $this->store->query('shipments')->when($status, fn ($q) => $q->where('status', $status))->orderByDesc('created_at')->limit(100)->get();
+        $ids = $rows->pluck('id')->all();
+        $orders = DB::table('shipment_orders as so')->where('so.tenant_id', $this->store->tenantId)->whereIn('so.shipment_id', $ids)
+            ->join('outbound_orders as o', fn ($j) => $j->on('o.id', '=', 'so.order_id')->on('o.tenant_id', '=', 'so.tenant_id'))
+            ->orderBy('o.number')->get(['so.shipment_id', 'o.id', 'o.number', 'o.status'])->groupBy('shipment_id');
+        $events = $this->store->query('shipment_carrier_events')->whereIn('shipment_id', $ids)->orderByDesc('occurred_at')->get(['shipment_id', 'status', 'reason', 'occurred_at'])->groupBy('shipment_id');
+        foreach ($rows as $s) {
+            $s->orders = ($orders[$s->id] ?? collect())->map(fn ($o) => ['id' => $o->id, 'number' => $o->number, 'status' => $o->status])->values()->all();
+            $s->carrier_events = ($events[$s->id] ?? collect())->take(10)->values()->all();
+        }
+
+        return $rows->all();
     }
 }

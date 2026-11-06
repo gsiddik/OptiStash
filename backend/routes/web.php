@@ -34,7 +34,7 @@ Route::middleware(['auth', PlatformContext::class, 'throttle:120,1'])->prefix('a
     Route::post('tenants/{id}/optinexus', [PlatformController::class, 'linkOptinexus'])->whereUuid('id');
     Route::get('audit', [PlatformController::class, 'audit']);
 });
-Route::middleware(['auth', 'tenant', 'throttle:120,1'])->prefix('api/v1')->group(function () {
+Route::middleware(['auth', 'tenant', 'throttle:'.config('optistash.api_rate_limit').',1'])->prefix('api/v1')->group(function () {
     Route::get('auth/me', [AuthController::class, 'me']);
     Route::middleware(InternalAccess::class)->group(function () {
         require __DIR__.'/master.php';
