@@ -106,6 +106,43 @@ class WarehouseController extends Controller
         return response()->json(['data' => (new SupplierPortalUsers(self::storeFor($r)))->create($partner, $d['name'], $d['email'], $d['password'])], 201);
     }
 
+    public function portalInvitations(Request $r, string $partner)
+    {
+        Access::authorize($r, 'partner.provision', 'Akun Anda tidak boleh mengelola akun portal pemasok.');
+
+        return response()->json(['data' => (new SupplierPortalUsers(self::storeFor($r)))->invitations($partner)]);
+    }
+
+    public function invitePortalUser(Request $r, string $partner)
+    {
+        Access::authorize($r, 'partner.provision', 'Akun Anda tidak boleh mengelola akun portal pemasok.');
+        $d = $r->validate(['name' => 'required|string|max:150', 'email' => 'required|email|max:254']);
+
+        return response()->json(['data' => (new SupplierPortalUsers(self::storeFor($r)))->invite($partner, $d['name'], $d['email'])], 201);
+    }
+
+    public function revokeInvitation(Request $r, string $partner, string $invitation)
+    {
+        Access::authorize($r, 'partner.provision', 'Akun Anda tidak boleh mengelola akun portal pemasok.');
+        (new SupplierPortalUsers(self::storeFor($r)))->revokeInvitation($partner, $invitation);
+
+        return response()->noContent();
+    }
+
+    /** Public: what the invited person sees before choosing a password. */
+    public function previewInvitation(Request $r, string $token)
+    {
+        return response()->json(['data' => SupplierPortalUsers::previewInvitation($token)]);
+    }
+
+    /** Public: the invited person chooses a password and the account is created. */
+    public function acceptInvitation(Request $r, string $token)
+    {
+        $d = $r->validate(['password' => ['required', 'string', 'max:1024', 'confirmed', Password::min(12)->letters()->mixedCase()->numbers()->symbols()]]);
+
+        return response()->json(['data' => SupplierPortalUsers::acceptInvitation($token, $d['password'])], 201);
+    }
+
     public function setPortalUserActive(Request $r, string $partner, int $membership)
     {
         Access::authorize($r, 'partner.provision', 'Akun Anda tidak boleh mengelola akun portal pemasok.');

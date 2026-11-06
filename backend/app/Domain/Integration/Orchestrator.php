@@ -2,6 +2,8 @@
 
 namespace App\Domain\Integration;
 
+use App\Domain\Integration\Optinexus\IdentityProviderUnavailable;
+use App\Domain\Integration\Optinexus\NexusApi;
 use App\Domain\Shared\TenantStore;
 use App\Domain\Warehouse\TransportSettings;
 use Illuminate\Support\Facades\DB;
@@ -12,7 +14,7 @@ use Illuminate\Support\Str;
  * The integration orchestrator. Business events leave OptiStash through the transactional outbox; this class decides where they go and
  * delivers them. Standalone mode keeps everything inside OptiStash (events stay queued, nothing is sent). Otherwise the tenant's
  * transport mode picks the route: THIRD_PARTY_API posts each shipment event, signed (HMAC-SHA256, same scheme as OptiNexus webhooks), to
- * the configured https address with retries and back-off; OPTIDELI events wait for the OptiDeli receiving contract (see CHECKPOINT.md);
+ * the configured https address with retries and back-off; OPTIDELI sends each dispatched shipment as a pickup request through the OptiNexus event broker;
  * MANUAL has nothing to deliver. "Force sync" retries failed events at once and delivers what is due.
  */
 final class Orchestrator
@@ -93,8 +95,16 @@ final class Orchestrator
                 continue;
             }
             $transport = TransportSettings::get($t);
+            if ($transport['mode'] === 'OPTIDELI') {
+                $r = self::deliverToOptideli($t, $force);
+                $result['delivered'] += $r['delivered'];
+                $result['failed'] += $r['failed'];
+                $result['skipped'] = $r['skipped'] ?? $result['skipped'];
+
+                continue;
+            }
             if ($transport['mode'] !== 'THIRD_PARTY_API') {
-                $result['skipped'] = $transport['mode'] === 'OPTIDELI' ? 'optideli-contract-pending' : 'manual';
+                $result['skipped'] = 'manual';
 
                 continue;
             }
@@ -119,6 +129,64 @@ final class Orchestrator
                     $attempts = $e->attempts + 1;
                     DB::table('outbox_events')->where('id', $e->id)->update(['attempts' => $attempts, 'last_error' => Str::limit((string) $ok, 290, ''), 'next_attempt_at' => now()->addMinutes(min(2 ** $attempts, 60))]);
                 }
+            }
+        }
+
+        return $result;
+    }
+
+    public const PICKUP_EVENT = 'optistash.pickup.requested';
+
+    /**
+     * OPTIDELI transport: a dispatched shipment becomes a pickup request that goes to the OptiNexus event broker, which hands it to OptiDeli
+     * (the event id is the outbox id, so a retry never makes a second request). Other shipment events carry nothing for a carrier and are
+     * closed without sending. The tenant must be linked to OptiNexus.
+     *
+     * @return array{delivered:int,failed:int,skipped:string|null}
+     */
+    private static function deliverToOptideli(string $tenantId, bool $force): array
+    {
+        $result = ['delivered' => 0, 'failed' => 0, 'skipped' => null];
+        $nexusTenant = DB::table('tenants')->where('id', $tenantId)->value('optinexus_tenant_id');
+        if (! $nexusTenant) {
+            $result['skipped'] = 'tenant-not-linked-to-optinexus';
+
+            return $result;
+        }
+        $events = DB::table('outbox_events')->where('tenant_id', $tenantId)->whereNull('published_at')->where(fn ($q) => $q->where('type', 'like', 'shipment.%')->orWhere('type', 'like', 'outbound.%'))
+            ->when(! $force, fn ($q) => $q->where('attempts', '<', self::MAX_ATTEMPTS)->where(fn ($w) => $w->whereNull('next_attempt_at')->orWhere('next_attempt_at', '<=', now())))
+            ->orderBy('created_at')->limit(100)->get();
+        $api = app(NexusApi::class);
+        foreach ($events as $e) {
+            if ($e->type !== 'shipment.dispatched.v1') {
+                DB::table('outbox_events')->where('id', $e->id)->update(['published_at' => now(), 'last_error' => null]);
+
+                continue;
+            }
+            $payload = json_decode($e->payload, true);
+            $pickup = $payload['data']['pickup'] ?? null;
+            $error = null;
+            if (! is_array($pickup)) {
+                $error = 'Event tanpa data pickup.';
+            } else {
+                try {
+                    $res = $api->send('POST', '/events', [
+                        'event_id' => $e->id, 'event_key' => self::PICKUP_EVENT, 'event_version' => '1', 'occurred_at' => $payload['occurred_at'] ?? now()->toIso8601String(),
+                        'tenant_id' => $nexusTenant, 'correlation_id' => $payload['subject_id'] ?? null,
+                        'data' => ['aggregate_type' => 'shipment', 'aggregate_id' => (string) ($payload['subject_id'] ?? $e->id), 'correlation' => (object) [], 'payload' => $pickup],
+                    ], scope: NexusApi::SCOPE_EVENT);
+                    $error = $res->successful() ? null : 'HTTP '.$res->status();
+                } catch (IdentityProviderUnavailable $ex) {
+                    $error = Str::limit($ex->getMessage(), 290, '');
+                }
+            }
+            if ($error === null) {
+                $result['delivered']++;
+                DB::table('outbox_events')->where('id', $e->id)->update(['published_at' => now(), 'last_error' => null]);
+            } else {
+                $result['failed']++;
+                $attempts = $e->attempts + 1;
+                DB::table('outbox_events')->where('id', $e->id)->update(['attempts' => $attempts, 'last_error' => Str::limit($error, 290, ''), 'next_attempt_at' => now()->addMinutes(min(2 ** $attempts, 60))]);
             }
         }
 

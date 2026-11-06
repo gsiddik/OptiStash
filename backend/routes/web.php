@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\IotController;
 use App\Http\Controllers\Api\OptinexusEventController;
 use App\Http\Controllers\Api\PlatformController;
 use App\Http\Controllers\Api\SsoController;
+use App\Http\Controllers\Api\WarehouseController;
 use App\Http\Middleware\InternalAccess;
 use App\Http\Middleware\SupplierAccess;
 use App\Http\Middleware\PlatformContext;
@@ -15,6 +16,8 @@ Route::get('/api/v1/health', fn () => response()->json(['status' => 'ok', 'servi
 Route::post('/api/v1/auth/logout', [AuthController::class, 'logout'])->middleware('auth');
 Route::post('/api/v1/auth/login', [AuthController::class, 'login'])->middleware('throttle:login');
 Route::post('/api/v1/auth/external-login', [AuthController::class, 'externalLogin'])->middleware('throttle:login');
+Route::get('/api/v1/auth/invitations/{token}', [WarehouseController::class, 'previewInvitation'])->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:30,1');
+Route::post('/api/v1/auth/invitations/{token}/accept', [WarehouseController::class, 'acceptInvitation'])->where('token', '[A-Za-z0-9]{48}')->middleware('throttle:10,1');
 Route::get('/api/v1/auth/sso/status', [SsoController::class, 'status']);
 Route::get('/api/v1/auth/sso/redirect', [SsoController::class, 'redirect'])->middleware('throttle:30,1');
 Route::get('/api/v1/auth/sso/callback', [SsoController::class, 'callback'])->middleware('throttle:30,1');

@@ -201,6 +201,11 @@ class OutboundTest extends TestCase
         $this->assertNotNull($event);
         $data = json_decode($event->payload, true)['data'];
         $this->assertSame(['OPTIDELI', 2, 'Jl. Pelanggan 1, Jakarta'], [$data['mode'], $data['manifest']['total_packages'], $data['manifest']['orders'][0]['ship_to']]);
+        // The OptiDeli contract: the warehouse as a place (no internal locations) and the goods to take, summed per product.
+        $pickup = $data['pickup'];
+        $this->assertSame(['code', 'name', 'address', 'city'], array_keys($pickup['warehouse']));
+        $this->assertSame([['P1', 30], ['P2', 4]], array_map(fn ($i) => [$i['product_code'], $i['quantity']], $pickup['items']));
+        $this->assertSame(['product_code', 'product_name', 'quantity', 'uom'], array_keys($pickup['items'][0]));
         $this->postJson("/api/v1/shipments/{$ship['id']}/dispatch")->assertUnprocessable();
     }
 

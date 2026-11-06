@@ -161,10 +161,30 @@ final class ShippingService
             DB::table('outbound_orders')->where('tenant_id', $this->store->tenantId)->whereIn('id', $orderIds)->where('status', 'PACKED')->update(['status' => 'DISPATCHED', 'updated_at' => now()]);
             DB::table('shipments')->where('tenant_id', $this->store->tenantId)->where('id', $shipmentId)->update(['status' => 'DISPATCHED', 'dispatched_at' => now(), 'updated_at' => now()]);
             $manifest = $this->manifest($shipmentId);
-            $this->store->event('shipment.dispatched', $shipmentId, ['number' => $s->number, 'mode' => $s->mode, 'manifest' => $manifest]);
+            $this->store->event('shipment.dispatched', $shipmentId, ['number' => $s->number, 'mode' => $s->mode, 'manifest' => $manifest, 'pickup' => $this->pickup($s, $orderIds)]);
 
             return $this->shipment($shipmentId);
         }, 3);
+    }
+
+    /**
+     * What a carrier needs to collect the goods (the OptiDeli contract, docs/architecture/INTEGRATION_ORCHESTRATOR.md): the warehouse as a
+     * place (never its internal zones, aisles or bins) and the goods to take, summed per product in the base unit of measure.
+     */
+    private function pickup(object $s, array $orderIds): array
+    {
+        $w = $this->store->find('warehouses', $s->warehouse_id);
+        $items = DB::table('outbound_lines as l')->where('l.tenant_id', $this->store->tenantId)->whereIn('l.order_id', $orderIds)->where('l.packed_qty', '>', 0)
+            ->join('products as p', fn ($j) => $j->on('p.id', '=', 'l.product_id')->on('p.tenant_id', '=', 'l.tenant_id'))
+            ->join('uoms as u', fn ($j) => $j->on('u.id', '=', 'p.base_uom_id')->on('u.tenant_id', '=', 'p.tenant_id'))
+            ->groupBy('p.code', 'p.name', 'u.code')->orderBy('p.code')
+            ->get(['p.code as product_code', 'p.name as product_name', 'u.code as uom', DB::raw('sum(l.packed_qty) as quantity')]);
+
+        return [
+            'shipment_number' => $s->number,
+            'warehouse' => ['code' => $w->code, 'name' => $w->name, 'address' => $w->address, 'city' => $w->city],
+            'items' => $items->map(fn ($i) => ['product_code' => $i->product_code, 'product_name' => $i->product_name, 'quantity' => (int) $i->quantity, 'uom' => $i->uom])->all(),
+        ];
     }
 
     public function cancelShipment(string $shipmentId, string $reason): object

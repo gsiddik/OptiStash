@@ -172,10 +172,44 @@ class IotTest extends TestCase
         $status = $this->getJson('/api/v1/integration/status')->assertOk()->json('data');
         $this->assertSame([0, 0, 1], [$status['outbox']['pending'], $status['outbox']['failed'], $status['outbox']['delivered']]);
 
-        // OptiDeli mode waits for its contract; manual has nothing to deliver.
-        $this->putJson('/api/v1/integration/transport', ['mode' => 'OPTIDELI'])->assertOk();
-        $this->postJson('/api/v1/integration/sync')->assertJsonPath('data.skipped', 'optideli-contract-pending');
+        // Manual has nothing to deliver.
+        $this->putJson('/api/v1/integration/transport', ['mode' => 'MANUAL'])->assertOk();
+        $this->postJson('/api/v1/integration/sync')->assertJsonPath('data.skipped', 'manual');
         $this->assertDatabaseHas('audit_events', ['action' => 'integration.force_sync']);
+    }
+
+    public function test_optideli_mode_sends_a_pickup_request_through_the_optinexus_broker(): void
+    {
+        config(['optistash.optinexus.base_url' => 'http://nexus.test', 'optistash.optinexus.service.client_id' => 'svc', 'optistash.optinexus.service.client_secret' => 'secret']);
+        \Illuminate\Support\Facades\Cache::flush();
+        $this->putJson('/api/v1/integration/transport', ['mode' => 'OPTIDELI'])->assertOk();
+        $pickup = ['shipment_number' => 'SHP-1', 'warehouse' => ['code' => 'WH1', 'name' => 'G', 'address' => 'Jl. A', 'city' => 'Bekasi'], 'items' => [['product_code' => 'ICE', 'product_name' => 'Es', 'quantity' => 5, 'uom' => 'PCS']]];
+        $dispatched = (string) Str::uuid();
+        $other = (string) Str::uuid();
+        DB::table('outbox_events')->insert(['id' => $dispatched, 'tenant_id' => $this->tenant, 'type' => 'shipment.dispatched.v1', 'payload' => json_encode(['subject_id' => 'S1', 'occurred_at' => '2026-11-09T10:00:00+00:00', 'data' => ['pickup' => $pickup]]), 'created_at' => now()]);
+        DB::table('outbox_events')->insert(['id' => $other, 'tenant_id' => $this->tenant, 'type' => 'shipment.created.v1', 'payload' => '{}', 'created_at' => now()->subSecond()]);
+
+        $status = 503;
+        Http::fake(['nexus.test/api/v1/oauth/token' => Http::response(['access_token' => 't', 'expires_in' => 3600]), 'nexus.test/api/v1/events' => function () use (&$status) {
+            return Http::response([], $status);
+        }]);
+        // Not linked to OptiNexus: nothing leaves.
+        $this->postJson('/api/v1/integration/sync')->assertJsonPath('data.skipped', 'tenant-not-linked-to-optinexus');
+        Http::assertNothingSent();
+
+        $nexus = (string) Str::uuid();
+        DB::table('tenants')->where('id', $this->tenant)->update(['optinexus_tenant_id' => $nexus]);
+        $r = $this->postJson('/api/v1/integration/sync')->assertOk()->json('data');
+        $this->assertSame([0, 1], [$r['delivered'], $r['failed']]);
+        $this->assertSame('HTTP 503', DB::table('outbox_events')->where('id', $dispatched)->value('last_error'));
+
+        $status = 202;
+        $r = $this->postJson('/api/v1/integration/sync')->assertOk()->json('data');
+        $this->assertSame([1, 0], [$r['delivered'], $r['failed']]);
+        $this->assertNotNull(DB::table('outbox_events')->where('id', $dispatched)->value('published_at'));
+        $this->assertNotNull(DB::table('outbox_events')->where('id', $other)->value('published_at')); // nothing for a carrier: closed without sending
+        Http::assertSent(fn ($request) => $request->url() === 'http://nexus.test/api/v1/events' && $request['event_id'] === $dispatched && $request['event_key'] === 'optistash.pickup.requested'
+            && $request['tenant_id'] === $nexus && $request['data']['aggregate_type'] === 'shipment' && $request['data']['payload']['warehouse']['city'] === 'Bekasi' && $request['data']['payload']['items'][0]['quantity'] === 5);
     }
 
     public function test_only_integration_managers_control_it(): void

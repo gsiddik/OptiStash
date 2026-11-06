@@ -1,3 +1,4 @@
+import { AcceptInvitationPage } from "./AcceptInvitation";
 import { createContext, useContext, useEffect, useState } from "react";
 import {
   Link,
@@ -675,6 +676,13 @@ async function signOut(done: () => void) {
 }
 export default function App() {
   const location = useLocation();
+  const invite = new URLSearchParams(location.search).get("invite");
+  if (invite && /^[A-Za-z0-9]{48}$/.test(invite))
+    return (
+      <ErrorBoundary>
+        <AcceptInvitationPage token={invite} />
+      </ErrorBoundary>
+    );
   return location.pathname.startsWith("/platform") ? (
     <ErrorBoundary>
       <PlatformApp />

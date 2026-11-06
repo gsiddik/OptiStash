@@ -4,6 +4,12 @@ import { Badge, Empty, ErrorBox, Field, Form, Loading } from "./components";
 import { Select } from "./Select";
 
 type Partner = { id: string; code: string; name: string; type: string };
+type Invitation = {
+  id: string;
+  name: string;
+  email: string;
+  expires_at: string;
+};
 type PortalUser = {
   membership_id: number;
   name: string;
@@ -18,6 +24,11 @@ export function SupplierAccountsPage() {
   const users = useData<{ data: PortalUser[] }>(
     partnerId ? `partners/${partnerId}/portal-users` : "master/schema",
   );
+  const invitations = useData<{ data: Invitation[] }>(
+    partnerId ? `partners/${partnerId}/invitations` : "master/schema",
+  );
+  const [inviteName, setInviteName] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
   const [error, setError] = useState<unknown>();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -33,7 +44,9 @@ export function SupplierAccountsPage() {
         Akun pemasok hanya dapat membuka portal pemasok, tidak pernah layar
         internal gudang.
       </p>
-      <ErrorBox error={error ?? partners.error ?? users.error} />
+      <ErrorBox
+        error={error ?? partners.error ?? users.error ?? invitations.error}
+      />
       <Field label="Pemasok">
         <Select
           value={partnerId}
@@ -94,7 +107,85 @@ export function SupplierAccountsPage() {
               </tbody>
             </table>
           )}
-          <h2>Tambah akun</h2>
+          <h2>Undang lewat email</h2>
+          <p className="muted">
+            Orang yang diundang menerima tautan satu kali (berlaku 72 jam) dan
+            memilih kata sandinya sendiri.
+          </p>
+          {(
+            (invitations.data as unknown as { data: Invitation[] } | undefined)
+              ?.data ?? []
+          ).length > 0 && (
+            <table>
+              <thead>
+                <tr>
+                  <th>Nama</th>
+                  <th>Email</th>
+                  <th>Berlaku sampai</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {(
+                  invitations.data as unknown as { data: Invitation[] }
+                ).data.map((i) => (
+                  <tr key={i.id}>
+                    <td>{i.name}</td>
+                    <td>{i.email}</td>
+                    <td>{new Date(i.expires_at).toLocaleString("id-ID")}</td>
+                    <td>
+                      <button
+                        onClick={() => {
+                          setError(undefined);
+                          api(
+                            `partners/${partnerId}/invitations/${i.id}`,
+                            "DELETE",
+                          )
+                            .then(invitations.refresh)
+                            .catch(setError);
+                        }}
+                      >
+                        Batalkan
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <Form
+            label="Kirim undangan"
+            onSubmit={async () => {
+              await api(`partners/${partnerId}/invitations`, "POST", {
+                name: inviteName,
+                email: inviteEmail,
+              });
+              setInviteName("");
+              setInviteEmail("");
+              invitations.refresh();
+            }}
+          >
+            <Field label="Nama">
+              <input
+                value={inviteName}
+                onChange={(e) => setInviteName(e.target.value)}
+                required
+                maxLength={150}
+              />
+            </Field>
+            <Field label="Email">
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                required
+              />
+            </Field>
+          </Form>
+          <h2>Tambah akun langsung</h2>
+          <p className="muted">
+            Tanpa undangan: administrator menetapkan kata sandi awal.
+          </p>
           <Form
             label="Buat akun"
             onSubmit={async () => {
