@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Domain\Access\PermissionCatalog;
 use App\Models\User;
 use Illuminate\Console\Command;
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -77,7 +78,7 @@ class DemoData extends Command
             $request->setRouteResolver(fn () => $route);
             $response = app('router')->prepareResponse($request, $route->run());
         } catch (\Throwable $e) {
-            $response = app(\Illuminate\Contracts\Debug\ExceptionHandler::class)->render($request, $e);
+            $response = app(ExceptionHandler::class)->render($request, $e);
         }
         /** @var Response $response */
         $json = json_decode((string) $response->getContent(), true) ?? [];
